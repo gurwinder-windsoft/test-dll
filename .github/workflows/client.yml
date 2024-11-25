@@ -1,29 +1,51 @@
-name: Connect to FTP Server
+name: Test SSH Connection to FTP Server
 
 on:
+  push:
+    branches:
+      - test
   pull_request:
-    branches: [ test ]
+    branches:
+      - test
 
 jobs:
-  build:
-    runs-on: windows-latest
+  test-connection:
+    runs-on: windows-latest  # Running on Windows
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
+    - name: Checkout the repository
+      uses: actions/checkout@v3
 
-      - name: Connect to FTP Server
-        env:
-          FTP_SERVER: "sftp://preprodftp.windsoft.ro/F4F"
-          FTP_USER: ${{ secrets.FTP_USER }}
-          FTP_PRIVATE_KEY: ${{ secrets.FTP_PRIVATE_KEY }}
-        run: |
-          # Save the PEM key to a file
-          echo "$FTP_PRIVATE_KEY" > pri.key
-          
-          # Set permissions
-          cmd /c "icacls pri.key /inheritance:r /grant:r $env:USERNAME:(R)"
-          
-          # Test the SSH connection
-          ssh -o StrictHostKeyChecking=no -i pri.key $FTP_USER@preprodftp.windsoft.ro ls
-        shell: bash
+    - name: Prepare SSH private key
+      run: |
+        # Fetch the private key from GitHub Secrets and save it to a file
+        echo "${{ secrets.FTP_PRIVATE_KEY }}" > pri.key
+        
+        # Reformat the private key to ensure proper newlines (for Windows)
+        sed 's/\\n/\n/g' pri.key > formatted_pri.key
+        
+        # Delete the existing pri.key file if it exists (just to be safe)
+        if (Test-Path -Path "pri.key") {
+          Remove-Item -Force pri.key
+        }
+
+        # Move the formatted key to pri.key
+        Move-Item -Path "formatted_pri.key" -Destination "pri.key"
+
+        # Verify the key by checking its validity
+        ssh-keygen -y -f pri.key || { echo "Invalid private key"; exit 1; }
+
+        # Set permissions on the private key (Windows equivalent)
+        # Remove inheritance and grant only the current user access
+        icacls pri.key /inheritance:r  # Remove inherited permissions
+        icacls pri.key /grant:r "$env:USERNAME:(R)"  # Grant read permission to the current user only
+
+        # Ensure that no other users have access (important for SSH private key)
+        icacls pri.key /remove "BUILTIN\Users"  # Remove permissions for other users (BUILTIN\Users)
+
+    - name: Test SSH connection to FTP server
+      run: |
+        # Test the SSH connection to the FTP server using the private key
+        echo "Testing SSH connection to FTP server..."
+        ssh -o StrictHostKeyChecking=no -i pri.key ${{ secrets.FTP_USER }}@92.180.12.186 ls
+      shell: bash
