@@ -31,9 +31,19 @@ jobs:
 
     - name: List Contents of WinSCP Directory
       run: |
-        $WinSCPPackagePath = "$env:TEMP\WinSCP"
+        $WinSCPPackagePath = "$env:TEMP\WinSCP\WinSCP.6.3.5"
         Write-Host "Listing contents of WinSCP directory:"
         Get-ChildItem -Path $WinSCPPackagePath -Recurse | ForEach-Object { Write-Host $_.FullName }
+
+    - name: Verify WinSCP Executable Path
+      run: |
+        $WinSCPExecutablePath = "$env:TEMP\WinSCP\WinSCP.6.3.5\tools\WinSCP.exe"
+        if (Test-Path $WinSCPExecutablePath) {
+            Write-Host "Found WinSCP executable at: $WinSCPExecutablePath"
+        } else {
+            Write-Host "WinSCP executable not found at: $WinSCPExecutablePath"
+            exit 1
+        }
 
     - name: Import WinSCP Assembly and Run Script
       run: |
@@ -42,9 +52,7 @@ jobs:
 
         if ($WinSCPAssemblyPath) {
           Write-Host "Found WinSCP .NET Assembly at: $($WinSCPAssemblyPath.FullName)"
-          
           try {
-              # Try to load the assembly explicitly and catch any errors
               Add-Type -Path $WinSCPAssemblyPath.FullName
               Write-Host "WinSCP .NET Assembly loaded successfully."
           } catch {
@@ -63,11 +71,7 @@ jobs:
               exit 1
           }
 
-          # Log the current working directory to ensure we are in the right place
-          Write-Host "Current Directory: $(Get-Location)"
-
           # Run the PowerShell script using WinSCP
-          Write-Host "Running clientmongo.ps1 script"
           pwsh -File ./clientmongo.ps1
         } else {
           Write-Host "WinSCP .NET Assembly not found."
