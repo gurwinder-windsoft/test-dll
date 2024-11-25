@@ -3,10 +3,10 @@ name: Run PowerShell Script
 on:
   push:
     branches:
-      - Test-csproj
+      - test
   pull_request:
     branches:
-      - Test-csproj
+      - test
 
 jobs:
   build:
