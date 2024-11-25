@@ -117,97 +117,151 @@ function Create-Client {
     }
 }
 
-# Function to get the latest build file from FTP server
-function Get-LatestBuildFile {
+# Function to check if the product exists and return the product object
+function Get-Product {
+    param (
+        [string]$authToken,
+        [string]$clientName,
+        [string]$productName
+    )
+
+    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
+    $headers = @{
+        "Authorization" = "Bearer $authToken"
+    }
+
+    try {
+        Write-Host "Sending request to fetch product details for $productName..."
+
+        $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
+
+        Write-Host "Response status code: $($response.StatusCode)"
+        Write-Host "Response body: $($response.Content)"
+
+        if ($response.StatusCode -eq 200) {
+            $products = $response.Content | ConvertFrom-Json
+            foreach ($product in $products) {
+                if ($product.productName -eq $productName) {
+                    Write-Host "Product $productName found."
+                    return $product
+                }
+            }
+            Write-Host "Product $productName not found."
+            return $null
+        } else {
+            Write-Host "Failed to fetch product details. Status Code: $($response.StatusCode)"
+            return $null
+        }
+    } catch {
+        Write-Host "Error fetching product details: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+# Helper Function to Create Product
+function Create-Product {
+    param (
+        [string]$authToken,
+        [object]$client,
+        [string]$latestZipFile,
+        [string]$version
+    )
+
+    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
+    $headers = @{
+        "Authorization" = "Bearer $authToken"
+    }
+
+    # Ensure product name doesn't have spaces
+    $productName = "Aigle1"  # Hardcoded for now, can be dynamic if required
+    $clientName = $client.clientName -replace '\s', ''  # Remove spaces from client name
+
+    $body = @{
+        productName  = $productName
+        client       = $client  # Pass the client object here
+        version      = $version
+        latestVersion = $latestZipFile
+    } | ConvertTo-Json -Depth 3  # Increase depth for nested client object
+
+    Write-Host "Creating product with the following details:"
+    Write-Host "Product: $($body.productName)"
+    Write-Host "Client: $($body.client.clientName)"
+    Write-Host "Version: $($body.version)"
+    Write-Host "Latest ZIP File: $($body.latestVersion)"
+
+    try {
+        # Send the POST request to create the product
+        $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
+
+        Write-Host "Response status code: $($response.StatusCode)"
+        Write-Host "Response body: $($response.Content)"
+
+        if ($response.StatusCode -eq 201) {
+            Write-Host "Product $($body.productName) created successfully."
+            return $response.Content | ConvertFrom-Json
+        } else {
+            Write-Host "Failed to create product. Status Code: $($response.StatusCode)"
+            Write-Host "Response body: $($response.Content)"
+        }
+    } catch {
+        Write-Host "Error creating product: $($_.Exception.Message)"
+    }
+}
+
+# Function to get the latest build from FTP server using SSH
+function Get-BuildFiles {
+    $remoteDirectory = "/mnt/ftpdata/$clientName"
+    $privateKeyPath = "pri.key"
+    $sshUser = $env:FTP_USER
+    $sshHost = "preprodftp.windsoft.ro"
+    $buildFiles = @()
+
+    try {
+        # Fetch list of files from remote directory using SSH
+        $command = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $sshUser@$sshHost 'ls $remoteDirectory'"
+        $output = Invoke-Expression $command
+        $buildFiles = $output -split "`n"
+
+        # Return the list of build files
+        Write-Host "Build files fetched from FTP server:"
+        $buildFiles | ForEach-Object { Write-Host $_ }
+
+        return $buildFiles
+    } catch {
+        Write-Host "Error fetching build files from FTP server: $($_.Exception.Message)"
+        return @()
+    }
+}
+
+# Function to get the latest build from the fetched files
+function Get-LatestBuild {
     param (
         [array]$buildFiles
     )
 
-    # Updated regex to match both 3-part and 4-part versions (e.g., 2.0.0 or 2.0.0.1)
-    $regex = 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip'
+    # Extract the latest build (in this case, the file with the most recent date)
+    $latestBuild = $buildFiles | Sort-Object { [datetime]::ParseExact($_, 'yyyy-MM-dd_HH-mm-ss', $null) } -Descending | Select-Object -First 1
+    Write-Host "Latest build: $latestBuild"
 
-    # Try to match the latest build file
-    $latestBuild = $buildFiles | Where-Object { $_.Name -match $regex }
-
-    if ($latestBuild) {
-        # Extract version (3 or 4 parts)
-        $version = ($latestBuild.Name -replace 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip', '$1')
-        Write-Host "Found latest build: $($latestBuild.Name) with version: $version"
-        return $latestBuild, $version
-    } else {
-        Write-Host "No valid build files found."
-        return $null, $null
-    }
+    return $latestBuild
 }
 
-# Main script logic
+# Main logic
 $authToken = Login
-
 if ($authToken) {
-    # Clean up any extra spaces or characters from the token
-    $authToken = $authToken.Trim()
-
-    # Ensure the token has no extra characters
-    if ($authToken.StartsWith("Bearer ")) {
-        $authToken = $authToken.Substring(7) # Remove "Bearer " prefix
-    }
-
-    Write-Host "Cleaned Authorization token: $authToken"
-
-    $clientName = "Aigleclient.2017"
-    $clientStatus = "Active"
-
-    # Step 1: Get the client details
-    $client = Get-Client -authToken $authToken -clientName $clientName
-
+    $client = Get-Client -authToken $authToken -clientName "Aigle"
     if (-not $client) {
-        Write-Host "Client $clientName not found. Creating the client..."
-        $client = Create-Client -authToken $authToken -clientName $clientName -clientStatus $clientStatus
-        if (-not $client) {
-            Write-Host "Failed to create client, exiting."
-            return
-        }
+        $client = Create-Client -authToken $authToken -clientName "Aigle" -clientStatus "Active"
     }
 
-    # Step 2: Get build files from FTP server
-    Write-Host "Listing build files from FTP server..."
+    $product = Get-Product -authToken $authToken -clientName $client.clientName -productName "Aigle1"
+    if (-not $product) {
+        $product = Create-Product -authToken $authToken -client $client -latestZipFile "example.zip" -version "1.0.0"
+    }
 
-    # Assuming you're fetching the files using SFTP or another method directly
-    # Placeholder for FTP/SFTP logic to get build files list
-    # Replace this with actual logic to fetch the list of files from the FTP server.
-
-    # For now, we're just using a mock list of files.
-    $buildFiles = @(
-        [PSCustomObject]@{ Name = 'Hard_WindNet_1.2.3_202311111200.zip' },
-        [PSCustomObject]@{ Name = 'Hard_WindNet_1.2.4_202311111200.zip' }
-    )
-
+    $buildFiles = Get-BuildFiles
     if ($buildFiles.Count -gt 0) {
-        Write-Host "Found build files: $($buildFiles.Name)"
-        $latestBuild, $version = Get-LatestBuildFile -buildFiles $buildFiles
-        if ($latestBuild) {
-            # Step 3: Get the product details
-            $productName = "Aigle1"  # Hardcoded for now, can be dynamic
-            $existingProduct = Get-Product -authToken $authToken -clientName $clientName -productName $productName
-
-            if (-not $existingProduct) {
-                Write-Host "Product $productName not found. Creating the product..."
-                $product = Create-Product -authToken $authToken -client $client -latestZipFile $latestBuild.Name -version $version
-                if ($product) {
-                    Write-Host "Product $productName created successfully."
-                } else {
-                    Write-Host "Failed to create product. Exiting."
-                    return
-                }
-            } else {
-                Write-Host "Product $productName already exists for client $clientName."
-            }
-        } else {
-            Write-Host "No valid build files found. Exiting."
-        }
-    } else {
-        Write-Host "No files found on FTP server."
+        $latestBuild = Get-LatestBuild -buildFiles $buildFiles
+        Write-Host "Latest build: $latestBuild"
     }
-} else {
-    Write-Host "Authorization failed. Exiting."
 }
