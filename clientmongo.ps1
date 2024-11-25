@@ -17,12 +17,12 @@ if (Test-Path $WinSCPAssemblyPath) {
 }
 
 # Define session options for FTP connection
-$sessionOptions = New-Object WinSCP.SessionOptions
+essionOptions = New-Object WinSCP.SessionOptions
 $sessionOptions.Protocol = [WinSCP.Protocol]::Sftp
 $sessionOptions.HostName = "preprodftp.windsoft.ro"  # FTP Host Address
-$sessionOptions.UserName = $ftpUser  # FTP Username
-$sessionOptions.SshPrivateKeyPath = $ftpPrivateKeyPath  # Path to PEM Key
-$sessionOptions.SshHostKeyFingerprint = $sshHostKeyFingerprint  # SSH Host Key Fingerprint
+$sessionOptions.UserName = $env:FTP_USER  # FTP Username
+$sessionOptions.SshPrivateKeyPath = $env:PREPRODFTPKEY  # Path to PEM Key
+$sessionOptions.SshHostKeyFingerprint = $env:SSH_HOST_KEY_FINGERPRINT  # SSH Hos
 
 # Check if the WinSCP executable exists
 $WinSCPExecutablePath = "$env:TEMP\WinSCP\WinSCP.6.3.5\tools\WinSCP.exe"
