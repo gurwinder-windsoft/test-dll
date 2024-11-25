@@ -1,10 +1,10 @@
-# Define FTP credentials and connection details
+# Define FTP credentials and connection details from GitHub secrets
 $ftpUser = $env:FTP_USER
 $ftpPrivateKeyPath = $env:PREPRODFTPKEY
-$sshHostKeyFingerprint = $env:SSH_HOST_KEY_FINGERPRINT  # SSH Host Key Fingerprint (replace with actual)
+$sshHostKeyFingerprint = $env:SSH_HOST_KEY_FINGERPRINT
 
-# Dynamically get the path of the WinSCP assembly (updated path from the latest log)
-$WinSCPAssemblyPath = "C:\Users\runneradmin\AppData\Local\Temp\WinSCP\WinSCP.6.3.5\lib\net40\WinSCPnet.dll"  # Update with actual path
+# Define WinSCP assembly path and load it into PowerShell
+$WinSCPAssemblyPath = "$env:TEMP\WinSCP\WinSCP.6.3.5\lib\netstandard2.0\WinSCPnet.dll"
 
 # Ensure the assembly is loaded properly
 if (Test-Path $WinSCPAssemblyPath) {
@@ -24,8 +24,8 @@ $sessionOptions.UserName = $ftpUser  # FTP Username
 $sessionOptions.SshPrivateKeyPath = $ftpPrivateKeyPath  # Path to PEM Key
 $sessionOptions.SshHostKeyFingerprint = $sshHostKeyFingerprint  # SSH Host Key Fingerprint
 
-# Dynamically find the correct path for WinSCP.exe
-$WinSCPExecutablePath = "C:\Users\runneradmin\AppData\Local\Temp\WinSCP\WinSCP.6.3.5\WinSCP.exe"  # Update with actual path
+# Check if the WinSCP executable exists
+$WinSCPExecutablePath = "$env:TEMP\WinSCP\WinSCP.6.3.5\tools\WinSCP.exe"
 if (Test-Path $WinSCPExecutablePath) {
     Write-Host "Found WinSCP executable at: $WinSCPExecutablePath"
 } else {
@@ -37,21 +37,18 @@ if (Test-Path $WinSCPExecutablePath) {
 $session = New-Object WinSCP.Session
 $session.ExecutablePath = $WinSCPExecutablePath
 
-# Open the session and list the files in the directory
+# Open the session and interact with the FTP server
 try {
     Write-Host "Opening SFTP session..."
     $session.Open($sessionOptions)
     Write-Host "Session opened successfully."
 
-    # List the files in the remote directory
-    $remoteFiles = $session.ListDirectory("/mnt/ftpdata/")  # Update with the correct remote directory
-    Write-Host "Files found on FTP server:"
-    
-    # Display the file names
+    # List the files in the directory
+    $remoteFiles = $session.ListDirectory("/mnt/ftpdata/")
+    Write-Host "Files found on FTP:"
     $remoteFiles.Files | ForEach-Object { Write-Host $_.Name }
 } catch {
     Write-Host "Error: $($_.Exception.Message)"
 } finally {
-    # Ensure to dispose of the session after the operation
     $session.Dispose()
 }
