@@ -42,7 +42,9 @@ jobs:
 
         if ($WinSCPAssemblyPath) {
           Write-Host "Found WinSCP .NET Assembly at: $($WinSCPAssemblyPath.FullName)"
+          
           try {
+              # Try to load the assembly explicitly and catch any errors
               Add-Type -Path $WinSCPAssemblyPath.FullName
               Write-Host "WinSCP .NET Assembly loaded successfully."
           } catch {
@@ -61,7 +63,11 @@ jobs:
               exit 1
           }
 
+          # Log the current working directory to ensure we are in the right place
+          Write-Host "Current Directory: $(Get-Location)"
+
           # Run the PowerShell script using WinSCP
+          Write-Host "Running clientmongo.ps1 script"
           pwsh -File ./clientmongo.ps1
         } else {
           Write-Host "WinSCP .NET Assembly not found."
