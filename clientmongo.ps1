@@ -1,10 +1,10 @@
 # Define FTP credentials and connection details
-$ftpUser = "your-ftp-username"  # FTP Username
-$ftpPrivateKeyPath = "path-to-your-private-key.pem"  # Path to your private SSH key (PEM)
-$sshHostKeyFingerprint = "your-ssh-host-key-fingerprint"  # SSH Host Key Fingerprint (replace with actual)
+$ftpUser = $env:FTP_USER
+$ftpPrivateKeyPath = $env:PREPRODFTPKEY
+$sshHostKeyFingerprint = $env:SSH_HOST_KEY_FINGERPRINT  # SSH Host Key Fingerprint (replace with actual)
 
-# Define WinSCP assembly path and load it into PowerShell
-$WinSCPAssemblyPath = "path-to-WinSCPnet.dll"  # Update with the actual path of the WinSCPnet.dll file
+# Dynamically get the path of the WinSCP assembly (updated path from the latest log)
+$WinSCPAssemblyPath = "C:\Users\runneradmin\AppData\Local\Temp\WinSCP\WinSCP.6.3.5\lib\net40\WinSCPnet.dll"  # Update with actual path
 
 # Ensure the assembly is loaded properly
 if (Test-Path $WinSCPAssemblyPath) {
@@ -24,8 +24,8 @@ $sessionOptions.UserName = $ftpUser  # FTP Username
 $sessionOptions.SshPrivateKeyPath = $ftpPrivateKeyPath  # Path to PEM Key
 $sessionOptions.SshHostKeyFingerprint = $sshHostKeyFingerprint  # SSH Host Key Fingerprint
 
-# Check if the WinSCP executable exists (this will be used for logging or other operations)
-$WinSCPExecutablePath = "path-to-WinSCP.exe"  # Update with the actual path of WinSCP.exe
+# Dynamically find the correct path for WinSCP.exe
+$WinSCPExecutablePath = "C:\Users\runneradmin\AppData\Local\Temp\WinSCP\WinSCP.6.3.5\WinSCP.exe"  # Update with actual path
 if (Test-Path $WinSCPExecutablePath) {
     Write-Host "Found WinSCP executable at: $WinSCPExecutablePath"
 } else {
