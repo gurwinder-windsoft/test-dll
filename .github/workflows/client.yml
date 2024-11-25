@@ -1,0 +1,64 @@
+name: Run PowerShell Script
+
+on:
+  push:
+    branches:
+      - Test-csproj
+  pull_request:
+    branches:
+      - Test-csproj
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v3
+
+    - name: Install NuGet Package WinSCP
+      run: |
+        # Install NuGet if not already installed
+        Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile "$env:TEMP\nuget.exe"
+        if (-not (Test-Path "$env:TEMP\nuget.exe")) {
+          Write-Host "NuGet CLI installation failed"
+          exit 1
+        }
+        $env:Path += ";$env:TEMP"
+
+        # Install WinSCP NuGet package
+        nuget install WinSCP -Source https://www.nuget.org/api/v2 -OutputDirectory "$env:TEMP\WinSCP"
+
+    - name: List Contents of WinSCP Directory
+      run: |
+        $WinSCPPackagePath = "$env:TEMP\WinSCP\WinSCP.6.3.5"
+        Write-Host "Listing contents of WinSCP directory:"
+        Get-ChildItem -Path $WinSCPPackagePath -Recurse | ForEach-Object { Write-Host $_.FullName }
+
+    - name: Import WinSCP Assembly and Run Script
+      run: |
+        # Check if the WinSCP .NET assembly exists
+        $WinSCPAssemblyPath = "$env:TEMP\WinSCP\WinSCP.6.3.5\lib\netstandard2.0\WinSCPnet.dll"
+        
+        # Verify if the DLL exists
+        if (Test-Path $WinSCPAssemblyPath) {
+          Write-Host "Found WinSCP .NET Assembly at: $WinSCPAssemblyPath"
+          try {
+              Add-Type -Path $WinSCPAssemblyPath
+              Write-Host "WinSCP .NET Assembly loaded successfully."
+          } catch {
+              Write-Host "Error loading WinSCP .NET Assembly: $_"
+              exit 1
+          }
+
+          # Set FTP-related secrets as environment variables
+          $env:FTP_USER = "${{ secrets.FTP_USER }}"
+          $env:PREPRODFTPKEY = "${{ secrets.PREPRODFTPKEY }}"
+          $env:SSH_HOST_KEY_FINGERPRINT = "${{ secrets.SSH_HOST_KEY_FINGERPRINT }}"
+
+          # Run the PowerShell script using WinSCP (e.g., clientmongo.ps1)
+          pwsh -File ./clientmongo.ps1
+        } else {
+          Write-Host "WinSCP .NET Assembly not found."
+          exit 1
+        }
