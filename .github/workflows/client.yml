@@ -35,25 +35,16 @@ jobs:
         Write-Host "Listing contents of WinSCP directory:"
         Get-ChildItem -Path $WinSCPPackagePath -Recurse | ForEach-Object { Write-Host $_.FullName }
 
-    - name: Verify WinSCP Executable Path
-      run: |
-        $WinSCPExecutablePath = "$env:TEMP\WinSCP\WinSCP.6.3.5\tools\WinSCP.exe"
-        if (Test-Path $WinSCPExecutablePath) {
-            Write-Host "Found WinSCP executable at: $WinSCPExecutablePath"
-        } else {
-            Write-Host "WinSCP executable not found at: $WinSCPExecutablePath"
-            exit 1
-        }
-
     - name: Import WinSCP Assembly and Run Script
       run: |
-        # Dynamically find the correct path for WinSCP .NET assembly
-        $WinSCPAssemblyPath = Get-ChildItem -Path "$env:TEMP\WinSCP" -Recurse -Filter 'WinSCPnet.dll' | Select-Object -First 1
-
-        if ($WinSCPAssemblyPath) {
-          Write-Host "Found WinSCP .NET Assembly at: $($WinSCPAssemblyPath.FullName)"
+        # Check if the WinSCP .NET assembly exists
+        $WinSCPAssemblyPath = "$env:TEMP\WinSCP\WinSCP.6.3.5\lib\netstandard2.0\WinSCPnet.dll"
+        
+        # Verify if the DLL exists
+        if (Test-Path $WinSCPAssemblyPath) {
+          Write-Host "Found WinSCP .NET Assembly at: $WinSCPAssemblyPath"
           try {
-              Add-Type -Path $WinSCPAssemblyPath.FullName
+              Add-Type -Path $WinSCPAssemblyPath
               Write-Host "WinSCP .NET Assembly loaded successfully."
           } catch {
               Write-Host "Error loading WinSCP .NET Assembly: $_"
@@ -65,13 +56,7 @@ jobs:
           $env:PREPRODFTPKEY = "${{ secrets.PREPRODFTPKEY }}"
           $env:SSH_HOST_KEY_FINGERPRINT = "${{ secrets.SSH_HOST_KEY_FINGERPRINT }}"
 
-          # Ensure clientmongo.ps1 exists before running it
-          if (-not (Test-Path "./clientmongo.ps1")) {
-              Write-Host "clientmongo.ps1 script not found."
-              exit 1
-          }
-
-          # Run the PowerShell script using WinSCP
+          # Run the PowerShell script using WinSCP (e.g., clientmongo.ps1)
           pwsh -File ./clientmongo.ps1
         } else {
           Write-Host "WinSCP .NET Assembly not found."
