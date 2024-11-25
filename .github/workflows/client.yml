@@ -36,8 +36,9 @@ jobs:
         ssh-keygen -y -f pri.key || { echo "Invalid private key"; exit 1; }
 
         # Set permissions on the private key (Windows equivalent)
-        icacls pri.key /inheritance:r
-        icacls pri.key /grant:r "$env:USERNAME:(R)"
+        # Remove permissions for everyone except the current user
+        icacls pri.key /inheritance:r  # Remove inherited permissions
+        icacls pri.key /grant:r "$env:USERNAME:(R)"  # Grant read permission to the current user
 
     - name: Test SSH connection to FTP server
       run: |
