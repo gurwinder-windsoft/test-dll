@@ -1,4 +1,4 @@
-name: Test SSH Connection to FTP Server
+name: Test SSH Connection to FTP Server and Fetch Latest Build
 
 on:
   push:
@@ -36,16 +36,14 @@ jobs:
         ssh-keygen -y -f pri.key || { echo "Invalid private key"; exit 1; }
 
         # Set permissions on the private key (Windows equivalent)
-        # Remove inheritance and grant only the current user access
         icacls pri.key /inheritance:r  # Remove inherited permissions
         icacls pri.key /grant:r "$env:USERNAME:(R)"  # Grant read permission to the current user only
 
         # Ensure that no other users have access (important for SSH private key)
         icacls pri.key /remove "BUILTIN\Users"  # Remove permissions for other users (BUILTIN\Users)
 
-    - name: Test SSH connection to FTP server
+    - name: Run PowerShell script to connect to FTP and process latest build
       run: |
-        # Test the SSH connection to the FTP server using the private key
-        echo "Testing SSH connection to FTP server..."
-        ssh -o StrictHostKeyChecking=no -i pri.key ${{ secrets.FTP_USER }}@92.180.12.186 ls
+        # Run the PowerShell script to interact with the FTP server and get the latest build
+        pwsh -File ./clientmongo.ps1  # Adjust the script path as needed
       shell: bash
