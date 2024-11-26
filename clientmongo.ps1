@@ -161,53 +161,12 @@ function Get-LatestBuildFile {
     }
 }
 
-# Function to check if the product exists
-function Get-Product {
+# Function to get or create the product
+function GetOrCreate-Product {
     param (
         [string]$authToken,
         [string]$clientName,
-        [string]$productName
-    )
-
-    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
-    $headers = @{
-        "Authorization" = "Bearer $authToken"
-    }
-
-    try {
-        Write-Host "Sending request to fetch product details..."
-
-        $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
-
-        Write-Host "Response status code: $($response.StatusCode)"
-        Write-Host "Response body: $($response.Content)"
-
-        # If the request is successful, check if the product exists
-        if ($response.StatusCode -eq 200) {
-            $products = $response.Content | ConvertFrom-Json
-            foreach ($product in $products) {
-                if ($product.productName -eq $productName) {
-                    Write-Host "Product $productName found."
-                    return $product
-                }
-            }
-            Write-Host "Product $productName not found."
-            return $null
-        } else {
-            Write-Host "Failed to fetch product details. Status Code: $($response.StatusCode)"
-            return $null
-        }
-    } catch {
-        Write-Host "Error fetching product details: $($_.Exception.Message)"
-        return $null
-    }
-}
-
-# Function to create a product
-function Create-Product {
-    param (
-        [string]$authToken,
-        [object]$client,
+        [string]$productName,
         [string]$latestZipFile,
         [string]$version
     )
@@ -217,33 +176,52 @@ function Create-Product {
         "Authorization" = "Bearer $authToken"
     }
 
-    # Ensure product name doesn't have spaces
-    $productName = "Aigle1"  # Hardcoded for now, can be dynamic if required
-    $clientName = $client.clientName -replace '\s', ''  # Remove spaces from client name
-
-    $body = @{
-        productName  = $productName
-        client       = $client  # Pass the client object here
-        version      = $version
-        latestVersion = $latestZipFile
-    } | ConvertTo-Json
-
     try {
-        Write-Host "Sending request to create product..."
-        $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
+        # Send the GET request to check if the product exists
+        Write-Host "Sending request to fetch product details..."
+        $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
 
         Write-Host "Response status code: $($response.StatusCode)"
         Write-Host "Response body: $($response.Content)"
 
-        if ($response.StatusCode -eq 201) {
-            Write-Host "Product created successfully!"
-            return $response.Content | ConvertFrom-Json
+        if ($response.StatusCode -eq 200) {
+            # Parse the response to check if the product exists
+            $products = $response.Content | ConvertFrom-Json
+            $product = $products | Where-Object { $_.productName -eq $productName }
+
+            if ($product) {
+                Write-Host "Product $productName found."
+                return $product
+            } else {
+                Write-Host "Product $productName not found. Creating the product..."
+            }
+        }
+
+        # If the product was not found, create the product
+        # Prepare the product creation request body
+        $body = @{
+            productName  = $productName
+            clientName   = $clientName  # Assuming we pass the client name in the product creation
+            version      = $version
+            latestVersion = $latestZipFile
+        } | ConvertTo-Json
+
+        # Send the POST request to create the product
+        $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
+
+        Write-Host "Create response status code: $($createResponse.StatusCode)"
+        Write-Host "Create response body: $($createResponse.Content)"
+
+        if ($createResponse.StatusCode -eq 201) {
+            Write-Host "Product $productName created successfully."
+            return $createResponse.Content | ConvertFrom-Json
         } else {
-            Write-Host "Failed to create product. Status Code: $($response.StatusCode)"
+            Write-Host "Failed to create product. Status Code: $($createResponse.StatusCode)"
+            Write-Host "Response body: $($createResponse.Content)"
             return $null
         }
     } catch {
-        Write-Host "Error creating product: $($_.Exception.Message)"
+        Write-Host "Error fetching or creating product: $($_.Exception.Message)"
         return $null
     }
 }
@@ -291,10 +269,11 @@ if ($authToken) {
         return
     }
 
-    # Step 4: Check if the product exists
-    $product = Get-Product -authToken $authToken -clientName $clientName -productName "Aigle1"
-    if (-not $product) {
-        # Step 5: Create the product if it doesn't exist
-        Create-Product -authToken $authToken -client $client -latestZipFile $latestZipFile -version $version
+    # Step 4: Get or create the product
+    $product = GetOrCreate-Product -authToken $authToken -clientName $clientName -productName "Aigle1" -latestZipFile $latestZipFile -version $version
+    if ($product) {
+        Write-Host "Product operation completed successfully."
+    } else {
+        Write-Host "Product creation or fetching failed."
     }
 }
