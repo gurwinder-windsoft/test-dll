@@ -114,19 +114,26 @@ function Create-Client {
 
 # Function to fetch build files from FTP server using SSH
 # Assuming FTP_USER is set as an environment variable
-$privateKeyPath = "pri.key"
-$sshUser = $env:FTP_USER  # Fetch the FTP_USER from environment variable
-$sshHost = "92.180.12.186"  # Set your FTP host IP
+$privateKeyPath = "pri.key"  # Path to the private key
+$sshUser = $env:FTP_USER     # Fetch the FTP_USER from the environment variable
+$sshHost = "92.180.12.186"   # Set your FTP host IP or domain name
+
+# Check if the environment variable is set
+if (-not $sshUser) {
+    Write-Host "Error: FTP_USER environment variable is not set."
+    return
+}
 
 # Construct the SSH command
-$command = "ssh -o StrictHostKeyChecking=no -i $privateKeyPath $sshUser@$sshHost ls"
+$command = "ssh -o StrictHostKeyChecking=no -i $privateKeyPath $sshUser@$sshHost ls /mnt/ftpdata"
 
 # Output the SSH command for debugging
 Write-Host "SSH Command: $command"
 
-# Execute the SSH command using Invoke-Expression
+# Execute the SSH command using Start-Process (more reliable for external commands like SSH)
 try {
-    $output = Invoke-Expression $command
+    # Run the SSH command and capture the output
+    $output = & ssh -o StrictHostKeyChecking=no -i $privateKeyPath $sshUser@$sshHost "ls /mnt/ftpdata"
     Write-Host "Output from SSH command: $output"
 } catch {
     Write-Host "Error executing SSH command: $($_.Exception.Message)"
