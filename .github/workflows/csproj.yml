@@ -37,5 +37,7 @@ jobs:
         # You can put your script in the repo and run it here
         # For example, if your script is in a folder named 'scripts'
         .\update-csproj.ps1
+      env:
+        GITHUB_TOKEN: ${{ secrets.TOKENGIT }}
 
  
