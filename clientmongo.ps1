@@ -142,6 +142,8 @@ function Get-LatestBuildFile {
 
     # Loop through each file from the ls output
     foreach ($file in $buildFiles) {
+        Write-Host "Processing file: $file"  # Debugging line to see raw output
+        
         # The ls output usually has the following format:
         # "Nov 26 07:50 Hard_WindNet_1.0.0810.1625.zip"
         # We need to extract the timestamp (e.g., "Nov 26 07:50")
@@ -168,6 +170,15 @@ function Get-LatestBuildFile {
         }
     }
 
+    # Return the latest build file and its timestamp
+    if ($latestBuild) {
+        Write-Host "Found latest build: $latestBuild with timestamp: $latestTimestamp"
+        return $latestBuild
+    } else {
+        Write-Host "No valid build files found."
+        return $null
+    }
+}
     # Return the latest build file and its timestamp
     if ($latestBuild) {
         Write-Host "Found latest build: $latestBuild with timestamp: $latestTimestamp"
