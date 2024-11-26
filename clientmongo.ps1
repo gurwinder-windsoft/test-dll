@@ -10,11 +10,9 @@ function Login {
     try {
         # Send the POST request and capture the entire response (including status code and headers)
         $response = Invoke-WebRequest -Uri $url -Method Post -Body $jsonBody -ContentType "application/json" -ErrorAction Stop
-
         # Capture the HTTP status code
         $statusCode = $response.StatusCode
         Write-Host "Response status code: $statusCode"
-
         # Check if the response contains headers
         if ($response.Headers["Authorization"]) {
             $authToken = $response.Headers["Authorization"]
@@ -46,10 +44,8 @@ function GetOrCreate-Client {
     try {
         # Send the GET request to check if the client exists
         $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
-
         Write-Host "Response status code: $($response.StatusCode)"
         Write-Host "Response body: $($response.Content)"
-
         if ($response.StatusCode -eq 200) {
             # Parse the response to check if the client exists
             $clients = $response.Content | ConvertFrom-Json
@@ -68,10 +64,8 @@ function GetOrCreate-Client {
 
                 # Send POST request to create the client
                 $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
-
                 Write-Host "Create response status code: $($createResponse.StatusCode)"
                 Write-Host "Create response body: $($createResponse.Content)"
-
                 if ($createResponse.StatusCode -eq 201) {
                     Write-Host "Client $clientName created successfully."
                     return $createResponse.Content | ConvertFrom-Json
@@ -90,7 +84,6 @@ function GetOrCreate-Client {
         return $null
     }
 }
-
 # Function to list build files from FTP server using SSH
 function List-FTPFiles {
     param (
@@ -99,7 +92,6 @@ function List-FTPFiles {
         [string]$FTPServerHost,
         [string]$Directory
     )
-
     # Create SSH directory for storing the private key
     $sshDir = "$env:USERPROFILE\.ssh"
     if (-not (Test-Path $sshDir)) {
@@ -126,7 +118,6 @@ function List-FTPFiles {
 
     # Execute the SSH command and capture the output
     $result = Invoke-Expression $sshCommand
-
     if ($result) {
         Write-Host "SSH connection successful. Listing files in ${Directory}:"
         return $result.Split("`n") | Where-Object { $_ -ne "" }  # Split by line and remove empty lines
@@ -162,8 +153,6 @@ function Get-LatestBuildFile {
 }
 
 # Function to get or create the product
-# Function to get or create the product
-# Function to create a product
 function Create-Product {
     param (
         [string]$authToken,
@@ -180,7 +169,6 @@ function Create-Product {
 
     # Ensure product name doesn't have spaces
     $productName = $productName -replace '\s', ''
-
     $body = @{
         productName  = $productName
         client       = $client  # Pass the client object here
@@ -191,7 +179,6 @@ function Create-Product {
     try {
         # Check if the product exists
         $getResponse = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
-
         if ($getResponse.StatusCode -eq 200) {
             # Parse the response to check if the product exists
             $products = $getResponse.Content | ConvertFrom-Json
@@ -206,7 +193,6 @@ function Create-Product {
         # If the product doesn't exist, create it
         Write-Host "Product $productName not found. Creating the product..."
         $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
-
         if ($createResponse.StatusCode -eq 201) {
             Write-Host "Product created successfully!"
             return $createResponse.Content | ConvertFrom-Json
@@ -222,19 +208,15 @@ function Create-Product {
 
 # Main script logic
 $authToken = Login
-
 if ($authToken) {
     $authToken = $authToken.Trim()
-
     if ($authToken.StartsWith("Bearer ")) {
         $authToken = $authToken.Substring(7)
     }
 
     Write-Host "Cleaned Authorization token: $authToken"
-
     $clientName = "Aigleclient.2017"
     $clientStatus = "Active"
-
     # Step 1: Get or create the client
     $client = GetOrCreate-Client -authToken $authToken -clientName $clientName -clientStatus $clientStatus
 
@@ -242,7 +224,6 @@ if ($authToken) {
         Write-Host "Failed to get or create client, exiting."
         return  # Exit if client creation fails
     }
-
     # Step 2: List build files from the FTP server
     $FTPServerHost = "preprodftp.windsoft.ro"
     $FTPUser = $env:FTP_USER
@@ -254,15 +235,12 @@ if ($authToken) {
         Write-Host "No build files found, exiting."
         return
     }
-
     # Step 3: Get the latest build file
     $latestZipFile, $version = Get-LatestBuildFile -buildFiles $buildFiles
-
     if (-not $latestZipFile) {
         Write-Host "No valid build files found, exiting."
         return
     }
-
     # Step 4: Create the product if it doesn't exist
     $product = Create-Product -authToken $authToken -client $client -latestZipFile $latestZipFile -version $version -productName "Aigle1"
 }
