@@ -135,22 +135,30 @@ function GetOrCreate-Product {
             } else {
                 Write-Host "Product $productName not found. Creating the product..."
                 $body = @{
-                    productName = $productName
-                    clientName  = $clientName
-                    version     = $version
+                    productName  = $productName
+                    clientName   = $clientName
+                    version      = $version
                     latestVersion = $latestZipFile
                 } | ConvertTo-Json -Depth 3
+                
+                # Log the body to see the data sent
+                Write-Host "Creating product with body: $body"
+
                 $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
+
                 if ($createResponse.StatusCode -eq 201) {
                     Write-Host "Product $productName created successfully."
                     return $createResponse.Content | ConvertFrom-Json
                 } else {
+                    # Log the error response body to understand the failure
                     Write-Host "Failed to create product. Status Code: $($createResponse.StatusCode)"
+                    Write-Host "Error Response: $($createResponse.Content)"
                     return $null
                 }
             }
         } else {
             Write-Host "Failed to fetch product details. Status Code: $($response.StatusCode)"
+            Write-Host "Error Response: $($response.Content)"
             return $null
         }
     } catch {
@@ -158,7 +166,6 @@ function GetOrCreate-Product {
         return $null
     }
 }
-
 # Main script logic
 $authToken = Login
 
