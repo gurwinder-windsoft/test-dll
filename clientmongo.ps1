@@ -6,18 +6,15 @@ function Login {
         Password = "testpasswordadmin"
     }
 
-    # Convert the credentials to JSON format
     $jsonBody = $loginCredentials | ConvertTo-Json
 
     try {
         # Send the POST request and capture the entire response (including status code and headers)
         $response = Invoke-WebRequest -Uri $url -Method Post -Body $jsonBody -ContentType "application/json" -ErrorAction Stop
 
-        # Capture the HTTP status code
         $statusCode = $response.StatusCode
         Write-Host "Response status code: $statusCode"
 
-        # Check if the response contains headers
         if ($response.Headers["Authorization"]) {
             $authToken = $response.Headers["Authorization"]
             Write-Host "Login successful! Authorization token: $authToken"
@@ -52,7 +49,6 @@ function Get-Client {
         Write-Host "Response status code: $($response.StatusCode)"
         Write-Host "Response body: $($response.Content)"
 
-        # If the request is successful, check if the client exists
         if ($response.StatusCode -eq 200) {
             $clients = $response.Content | ConvertFrom-Json
             foreach ($client in $clients) {
@@ -65,6 +61,7 @@ function Get-Client {
             return $null
         } else {
             Write-Host "Failed to fetch client details. Status Code: $($response.StatusCode)"
+            Write-Host "Response body: $($response.Content)"
             return $null
         }
     } catch {
@@ -73,7 +70,7 @@ function Get-Client {
     }
 }
 
-# Helper Function to Create Client
+# Function to create a new client
 function Create-Client {
     param (
         [string]$authToken,
@@ -86,7 +83,6 @@ function Create-Client {
         "Authorization" = "Bearer $authToken"
     }
 
-    # Define the client details
     $clientBody = @{
         clientName  = $clientName
         clientStatus = $clientStatus
@@ -97,7 +93,6 @@ function Create-Client {
         Write-Host "Client Name: $clientName"
         Write-Host "Client Status: $clientStatus"
 
-        # Send the POST request to create the client
         $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $clientBody -ContentType "application/json" -ErrorAction Stop       
 
         Write-Host "Response status code: $($response.StatusCode)"
@@ -117,99 +112,9 @@ function Create-Client {
     }
 }
 
-# Function to check if the product exists and return the product object
-function Get-Product {
-    param (
-        [string]$authToken,
-        [string]$clientName,
-        [string]$productName
-    )
-
-    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
-    $headers = @{
-        "Authorization" = "Bearer $authToken"
-    }
-
-    try {
-        Write-Host "Sending request to fetch product details for $productName..."
-
-        $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
-
-        Write-Host "Response status code: $($response.StatusCode)"
-        Write-Host "Response body: $($response.Content)"
-
-        if ($response.StatusCode -eq 200) {
-            $products = $response.Content | ConvertFrom-Json
-            foreach ($product in $products) {
-                if ($product.productName -eq $productName) {
-                    Write-Host "Product $productName found."
-                    return $product
-                }
-            }
-            Write-Host "Product $productName not found."
-            return $null
-        } else {
-            Write-Host "Failed to fetch product details. Status Code: $($response.StatusCode)"
-            return $null
-        }
-    } catch {
-        Write-Host "Error fetching product details: $($_.Exception.Message)"
-        return $null
-    }
-}
-
-# Helper Function to Create Product
-function Create-Product {
-    param (
-        [string]$authToken,
-        [object]$client,
-        [string]$latestZipFile,
-        [string]$version
-    )
-
-    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
-    $headers = @{
-        "Authorization" = "Bearer $authToken"
-    }
-
-    # Ensure product name doesn't have spaces
-    $productName = "Aigle1"  # Hardcoded for now, can be dynamic if required
-    $clientName = $client.clientName -replace '\s', ''  # Remove spaces from client name
-
-    $body = @{
-        productName  = $productName
-        client       = $client  # Pass the client object here
-        version      = $version
-        latestVersion = $latestZipFile
-    } | ConvertTo-Json -Depth 3  # Increase depth for nested client object
-
-    Write-Host "Creating product with the following details:"
-    Write-Host "Product: $($body.productName)"
-    Write-Host "Client: $($body.client.clientName)"
-    Write-Host "Version: $($body.version)"
-    Write-Host "Latest ZIP File: $($body.latestVersion)"
-
-    try {
-        # Send the POST request to create the product
-        $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
-
-        Write-Host "Response status code: $($response.StatusCode)"
-        Write-Host "Response body: $($response.Content)"
-
-        if ($response.StatusCode -eq 201) {
-            Write-Host "Product $($body.productName) created successfully."
-            return $response.Content | ConvertFrom-Json
-        } else {
-            Write-Host "Failed to create product. Status Code: $($response.StatusCode)"
-            Write-Host "Response body: $($response.Content)"
-        }
-    } catch {
-        Write-Host "Error creating product: $($_.Exception.Message)"
-    }
-}
-
-# Function to get the latest build from FTP server using SSH
+# Function to fetch build files from FTP server using SSH
 function Get-BuildFiles {
+    $clientName = "Aigleclient.2017"  # Ensure client name is set properly
     $remoteDirectory = "/mnt/ftpdata/$clientName"
     $privateKeyPath = "pri.key"
     $sshUser = $env:FTP_USER
@@ -217,12 +122,11 @@ function Get-BuildFiles {
     $buildFiles = @()
 
     try {
-        # Fetch list of files from remote directory using SSH
+        Write-Host "Fetching build files from FTP server: $sshHost"
         $command = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $sshUser@$sshHost 'ls $remoteDirectory'"
         $output = Invoke-Expression $command
         $buildFiles = $output -split "`n"
 
-        # Return the list of build files
         Write-Host "Build files fetched from FTP server:"
         $buildFiles | ForEach-Object { Write-Host $_ }
 
@@ -233,35 +137,64 @@ function Get-BuildFiles {
     }
 }
 
-# Function to get the latest build from the fetched files
-function Get-LatestBuild {
+# Function to get the latest build file
+function Get-LatestBuildFile {
     param (
         [array]$buildFiles
     )
 
-    # Extract the latest build (in this case, the file with the most recent date)
-    $latestBuild = $buildFiles | Sort-Object { [datetime]::ParseExact($_, 'yyyy-MM-dd_HH-mm-ss', $null) } -Descending | Select-Object -First 1
-    Write-Host "Latest build: $latestBuild"
+    $regex = 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip'
 
-    return $latestBuild
+    $latestBuild = $buildFiles | Where-Object { $_ -match $regex }
+
+    if ($latestBuild) {
+        $version = ($latestBuild -replace 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip', '$1')
+        Write-Host "Found latest build: $($latestBuild) with version: $version"
+        return $latestBuild, $version
+    } else {
+        Write-Host "No valid build files found."
+        return $null, $null
+    }
 }
 
-# Main logic
+# Main script execution
 $authToken = Login
+
 if ($authToken) {
-    $client = Get-Client -authToken $authToken -clientName "Aigle"
-    if (-not $client) {
-        $client = Create-Client -authToken $authToken -clientName "Aigle" -clientStatus "Active"
+    $authToken = $authToken.Trim()
+
+    if ($authToken.StartsWith("Bearer ")) {
+        $authToken = $authToken.Substring(7) # Remove "Bearer " prefix
     }
 
-    $product = Get-Product -authToken $authToken -clientName $client.clientName -productName "Aigle1"
-    if (-not $product) {
-        $product = Create-Product -authToken $authToken -client $client -latestZipFile "example.zip" -version "1.0.0"
+    Write-Host "Cleaned Authorization token: $authToken"
+
+    $clientName = "Aigleclient.2017"
+    $clientStatus = "Active"
+
+    $client = Get-Client -authToken $authToken -clientName $clientName
+
+    if (-not $client) {
+        Write-Host "Client $clientName not found. Creating the client..."
+        $client = Create-Client -authToken $authToken -clientName $clientName -clientStatus $clientStatus
+        if (-not $client) {
+            Write-Host "Failed to create client, exiting."
+            return
+        }
     }
 
     $buildFiles = Get-BuildFiles
+
     if ($buildFiles.Count -gt 0) {
-        $latestBuild = Get-LatestBuild -buildFiles $buildFiles
-        Write-Host "Latest build: $latestBuild"
+        $latestBuild, $version = Get-LatestBuildFile -buildFiles $buildFiles
+        if ($latestBuild) {
+            Write-Host "Latest build: $latestBuild with version: $version"
+        } else {
+            Write-Host "No valid build files found."
+        }
+    } else {
+        Write-Host "No files found on FTP server."
     }
+} else {
+    Write-Host "Authorization failed. Exiting."
 }
