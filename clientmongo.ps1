@@ -130,9 +130,11 @@ function Get-BuildFilesFromFTP {
     Write-Host "Listing files from remote FTP directory $remoteDir..."
 
     try {
-        # Run the ssh command to list files on the FTP server
-        $command = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $userName@$hostName 'ls $remoteDir'"
-        $result = Invoke-Expression $command
+        # Construct the SSH command
+        $sshCommand = "ssh -i `"$privateKeyPath`" -o StrictHostKeyChecking=no $userName@$hostName `ls $remoteDir`"
+
+        # Run the ssh command and capture the output
+        $result = & $sshCommand
 
         Write-Host "Files found on the FTP server:"
         Write-Host $result
@@ -142,7 +144,6 @@ function Get-BuildFilesFromFTP {
         return $null
     }
 }
-
 # Helper function to get the latest build file from the list
 function Get-LatestBuildFile {
     param (
