@@ -114,23 +114,25 @@ function Create-Client {
 
 # Function to fetch build files from FTP server using SSH
 function Get-BuildFiles {
-    $clientName = "Aigleclient.2017"  # Ensure client name is set properly
+    $clientName = "Aigleclient.2017"  # Set your client name
     $remoteDirectory = "/mnt/ftpdata/$clientName"
     $privateKeyPath = "pri.key"
     $sshUser = $env:FTP_USER
-    $sshHost = "preprodftp.windsoft.ro"
+    $sshHost = "preprodftp.windsoft.ro"  # FTP host address
     $buildFiles = @()
 
     try {
         Write-Host "Fetching build files from FTP server: $sshHost"
 
-        # Correct the SSH command construction
+        # Correct the command by ensuring the @ symbol is treated as part of the string
         $command = "ssh -v -i $privateKeyPath -o StrictHostKeyChecking=no $sshUser@$sshHost 'ls $remoteDirectory'"
 
-        # Invoke the SSH command
+        Write-Host "SSH Command: $command"  # This helps verify the constructed command
+
+        # Execute the SSH command using Invoke-Expression
         $output = Invoke-Expression $command
         
-        # Split the output to get the list of files
+        # Split the output into an array of files
         $buildFiles = $output -split "`n"
 
         Write-Host "Build files fetched from FTP server:"
@@ -142,7 +144,6 @@ function Get-BuildFiles {
         return @()
     }
 }
-
 # Function to get the latest build file
 function Get-LatestBuildFile {
     param (
