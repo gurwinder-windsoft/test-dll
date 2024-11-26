@@ -73,6 +73,46 @@ function Get-Client {
     }
 }
 
+# Function to create a client if it doesn't exist
+function Create-Client {
+    param (
+        [string]$authToken,
+        [string]$clientName,
+        [string]$clientStatus
+    )
+
+    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Client"
+    $headers = @{
+        "Authorization" = "Bearer $authToken"
+    }
+
+    $body = @{
+        clientName = $clientName
+        clientStatus = $clientStatus
+    } | ConvertTo-Json
+
+    try {
+        Write-Host "Creating client: $clientName..."
+
+        $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
+
+        Write-Host "Response status code: $($response.StatusCode)"
+        Write-Host "Response body: $($response.Content)"
+
+        if ($response.StatusCode -eq 201) {
+            Write-Host "Client $clientName created successfully."
+            return $response.Content | ConvertFrom-Json
+        } else {
+            Write-Host "Failed to create client. Status Code: $($response.StatusCode)"
+            Write-Host "Response body: $($response.Content)"
+        }
+    } catch {
+        Write-Host "Error creating client: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+# Function to list files in an FTP server using SSH
 function List-FTPFiles {
     param (
         [string]$FTPUser,
@@ -152,6 +192,91 @@ function Get-LatestBuildFile {
     }
 }
 
+# Function to check if the product exists for the client
+function Get-Product {
+    param (
+        [string]$authToken,
+        [string]$clientName,
+        [string]$productName
+    )
+
+    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
+    $headers = @{
+        "Authorization" = "Bearer $authToken"
+    }
+
+    try {
+        Write-Host "Fetching product details for $productName under client $clientName..."
+
+        $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
+
+        Write-Host "Response status code: $($response.StatusCode)"
+        Write-Host "Response body: $($response.Content)"
+
+        # If the request is successful, check if the product exists
+        if ($response.StatusCode -eq 200) {
+            $products = $response.Content | ConvertFrom-Json
+            foreach ($product in $products) {
+                if ($product.productName -eq $productName) {
+                    Write-Host "Product $productName found."
+                    return $product
+                }
+            }
+            Write-Host "Product $productName not found."
+            return $null
+        } else {
+            Write-Host "Failed to fetch product details. Status Code: $($response.StatusCode)"
+            return $null
+        }
+    } catch {
+        Write-Host "Error fetching product details: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+# Function to create a product if it doesn't exist
+function Create-Product {
+    param (
+        [string]$authToken,
+        [object]$client,
+        [string]$latestZipFile,
+        [string]$version
+    )
+
+    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
+    $headers = @{
+        "Authorization" = "Bearer $authToken"
+    }
+
+    $body = @{
+        productName = "Aigle1"  # Hardcoded for now, can be dynamic based on the build
+        clientId = $client.id
+        buildFile = $latestZipFile
+        version = $version
+        productStatus = "Active"
+    } | ConvertTo-Json
+
+    try {
+        Write-Host "Creating product: Aigle1 for client $($client.clientName)..."
+
+        $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
+
+        Write-Host "Response status code: $($response.StatusCode)"
+        Write-Host "Response body: $($response.Content)"
+
+        if ($response.StatusCode -eq 201) {
+            Write-Host "Product created successfully."
+            return $response.Content | ConvertFrom-Json
+        } else {
+            Write-Host "Failed to create product. Status Code: $($response.StatusCode)"
+            Write-Host "Response body: $($response.Content)"
+        }
+    } catch {
+        Write-Host "Error creating product: $($_.Exception.Message)"
+        return $null
+    }
+}
+
 # Main script logic
 $authToken = Login
 
@@ -172,13 +297,16 @@ if ($authToken) {
     # Step 1: Get the client details
     $client = Get-Client -authToken $authToken -clientName $clientName
 
+    # Check if client doesn't exist, create the client if not found
     if (-not $client) {
         Write-Host "Client $clientName not found. Creating the client..."
         $client = Create-Client -authToken $authToken -clientName $clientName -clientStatus $clientStatus
         if (-not $client) {
             Write-Host "Failed to create client, exiting."
-            return
+            return  # Exit the script if client creation fails
         }
+    } else {
+        Write-Host "Client $clientName found."
     }
 
     # Step 2: List build files from FTP server
