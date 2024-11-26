@@ -118,6 +118,10 @@ function Create-Client {
 }
 
 # Helper Function to fetch files from FTP using SSH/SFTP
+# Full path to ssh (replace with actual path if different)
+$sshPath = "C:\Windows\System32\OpenSSH\ssh.exe"
+
+# Helper Function to fetch files from FTP using SSH/SFTP
 function Get-BuildFilesFromFTP {
     param (
         [string]$hostName,
@@ -126,16 +130,15 @@ function Get-BuildFilesFromFTP {
         [string]$remoteDir
     )
 
-    # Use the `ssh` command to list files from the FTP server
     Write-Host "Listing files from remote FTP directory $remoteDir..."
 
     try {
         # Make sure the private key path is enclosed in quotes if it has spaces
         $quotedPrivateKeyPath = "`"$privateKeyPath`""
 
-        $command = "ssh -i $quotedPrivateKeyPath -o StrictHostKeyChecking=no $userName@$hostName 'ls $remoteDir'"
+        # Build the SSH command as a string
+        $command = "$sshPath -i $quotedPrivateKeyPath -o StrictHostKeyChecking=no $userName@$hostName 'ls $remoteDir'"
 
-        # Debug: Output the full SSH command to verify
         Write-Host "Running SSH command: $command"
 
         # Use the & (call operator) to execute the SSH command
