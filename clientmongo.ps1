@@ -32,7 +32,7 @@ function Login {
     }
 }
 
-# Function to check if the client exists and return the client object
+# Function to check if the client exists and return the client objec
 function Get-Client {
     param (
         [string]$authToken,
