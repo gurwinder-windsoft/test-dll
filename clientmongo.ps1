@@ -73,6 +73,7 @@ function Get-Client {
     }
 }
 
+# Function to list files from FTP server
 function List-FTPFiles {
     param (
         [string]$FTPUser,
@@ -149,6 +150,97 @@ function Get-LatestBuildFile {
     } else {
         Write-Host "No valid build files found."
         return $null, $null
+    }
+}
+
+# Function to check if the product exists and return the product object
+function Get-Product {
+    param (
+        [string]$authToken,
+        [string]$clientName,
+        [string]$productName
+    )
+
+    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
+    $headers = @{
+        "Authorization" = "Bearer $authToken"
+    }
+
+    try {
+        Write-Host "Sending request to fetch product details for $productName..."
+
+        $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
+
+        Write-Host "Response status code: $($response.StatusCode)"
+        Write-Host "Response body: $($response.Content)"
+
+        if ($response.StatusCode -eq 200) {
+            $products = $response.Content | ConvertFrom-Json
+            foreach ($product in $products) {
+                if ($product.productName -eq $productName) {
+                    Write-Host "Product $productName found."
+                    return $product
+                }
+            }
+            Write-Host "Product $productName not found."
+            return $null
+        } else {
+            Write-Host "Failed to fetch product details. Status Code: $($response.StatusCode)"
+            return $null
+        }
+    } catch {
+        Write-Host "Error fetching product details: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+# Helper Function to Create Product
+function Create-Product {
+    param (
+        [string]$authToken,
+        [object]$client,
+        [string]$latestZipFile,
+        [string]$version
+    )
+
+    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
+    $headers = @{
+        "Authorization" = "Bearer $authToken"
+    }
+
+    # Ensure product name doesn't have spaces
+    $productName = "Aigle1"  # Hardcoded for now, can be dynamic if required
+    $clientName = $client.clientName -replace '\s', ''  # Remove spaces from client name
+
+    $body = @{
+        productName  = $productName
+        client       = $client  # Pass the client object here
+        version      = $version
+        latestVersion = $latestZipFile
+    } | ConvertTo-Json -Depth 3  # Increase depth for nested client object
+
+    Write-Host "Creating product with the following details:"
+    Write-Host "Product: $($body.productName)"
+    Write-Host "Client: $($body.client.clientName)"
+    Write-Host "Version: $($body.version)"
+    Write-Host "Latest ZIP File: $($body.latestVersion)"
+
+    try {
+        # Send the POST request to create the product
+        $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
+
+        Write-Host "Response status code: $($response.StatusCode)"
+        Write-Host "Response body: $($response.Content)"
+
+        if ($response.StatusCode -eq 201) {
+            Write-Host "Product $($body.productName) created successfully."
+            return $response.Content | ConvertFrom-Json
+        } else {
+            Write-Host "Failed to create product. Status Code: $($response.StatusCode)"
+            Write-Host "Response body: $($response.Content)"
+        }
+    } catch {
+        Write-Host "Error creating product: $($_.Exception.Message)"
     }
 }
 
