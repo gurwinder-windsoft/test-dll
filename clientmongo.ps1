@@ -123,6 +123,7 @@ function Get-BuildFiles {
 
     try {
         Write-Host "Fetching build files from FTP server: $sshHost"
+        # Use string interpolation to correctly reference the $sshHost variable
         $command = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $sshUser@$sshHost 'ls $remoteDirectory'"
         $output = Invoke-Expression $command
         $buildFiles = $output -split "`n"
