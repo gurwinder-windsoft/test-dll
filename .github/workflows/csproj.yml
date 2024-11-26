@@ -1,0 +1,41 @@
+name: Update .csproj Files
+
+on:
+  push:
+    branches:
+      - test
+  pull_request:
+    branches:
+      - test
+
+jobs:
+  update_csproj:
+    runs-on: windows-latest  # Runs on a Windows machine
+
+    steps:
+    # Step 1: Check out the repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Step 2: Set up PowerShell
+    - name: Set up PowerShell
+      uses: actions/setup-powershell@v2
+
+    # Step 3: Set up GitHub token (store it in GitHub secrets for security)
+    - name: Set up GitHub Token
+      run: |
+        echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+    # Step 4: Install necessary modules (like 'powershell-get' or any others)
+    - name: Install required modules
+      run: |
+        Install-Module -Name 'PowershellGet' -Force -AllowClobber
+
+    # Step 5: Run the PowerShell script
+    - name: Run Update Script
+      run: |
+        # You can put your script in the repo and run it here
+        # For example, if your script is in a folder named 'scripts'
+        .\update-csproj.ps1
+
+ 
