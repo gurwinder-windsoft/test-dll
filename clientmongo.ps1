@@ -5,10 +5,8 @@ function Login {
         email    = "test.admin@windsoft.ro"
         Password = "testpasswordadmin"
     }
-
     # Convert the credentials to JSON format
     $jsonBody = $loginCredentials | ConvertTo-Json
-
     try {
         # Send the POST request and capture the entire response (including status code and headers)
         $response = Invoke-WebRequest -Uri $url -Method Post -Body $jsonBody -ContentType "application/json" -ErrorAction Stop
@@ -31,7 +29,6 @@ function Login {
         return $null
     }
 }
-
 # Function to check if the client exists and return the client object
 function Get-Client {
     param (
@@ -46,9 +43,7 @@ function Get-Client {
 
     try {
         Write-Host "Sending request to fetch client details..."
-
         $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
-
         Write-Host "Response status code: $($response.StatusCode)"
         Write-Host "Response body: $($response.Content)"
 
@@ -93,12 +88,9 @@ function Create-Client {
 
     try {
         Write-Host "Creating client: $clientName..."
-
         $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
-
         Write-Host "Response status code: $($response.StatusCode)"
         Write-Host "Response body: $($response.Content)"
-
         if ($response.StatusCode -eq 201) {
             Write-Host "Client $clientName created successfully."
             return $response.Content | ConvertFrom-Json
@@ -130,16 +122,8 @@ function List-FTPFiles {
     # Save the private key to a file
     $privateKeyPath = "$sshDir\id_rsa"
     Set-Content -Path $privateKeyPath -Value $FTPPrivateKey -Force
-
     # Set correct permissions for the private key file
     icacls $privateKeyPath /inheritance:r /grant:r "$($env:USERNAME):(R)"
-
-    # Ensure SSH is available (if you're on Windows)
-    $sshAvailable = Get-Command ssh -ErrorAction SilentlyContinue
-    if (-not $sshAvailable) {
-        Write-Host "SSH is not installed on this machine."
-        exit 1
-    }
 
     # Add the FTP server's SSH fingerprint to known_hosts
     $knownHostsPath = "$sshDir\known_hosts"
@@ -149,7 +133,6 @@ function List-FTPFiles {
 
     # Fetch the SSH fingerprint of the FTP server and append it to known_hosts
     ssh-keyscan -H $FTPServerHost | Out-File -Append -FilePath $knownHostsPath
-
     # SSH command to list files in the directory
     $sshCommand = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $FTPUser@$FTPServerHost 'ls $Directory'"
     Write-Host "Running SSH command: $sshCommand"
@@ -180,7 +163,6 @@ function Get-LatestBuildFile {
 
     # Try to match the latest build file
     $latestBuild = $buildFiles | Where-Object { $_ -match $regex }
-
     if ($latestBuild) {
         # Extract version (3 or 4 parts)
         $version = ($latestBuild -replace 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip', '$1')
