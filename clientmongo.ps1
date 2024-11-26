@@ -95,12 +95,6 @@ function List-FTPFiles {
     # Set correct permissions for the private key file
     icacls $privateKeyPath /inheritance:r /grant:r "$($env:USERNAME):(R)"
 
-    # Ensure SSH is available (if you're on Windows)
-    $sshAvailable = Get-Command ssh -ErrorAction SilentlyContinue
-    if (-not $sshAvailable) {
-        Write-Host "SSH is not installed on this machine."
-        exit 1
-    }
 
     # Add the FTP server's SSH fingerprint to known_hosts
     $knownHostsPath = "$sshDir\known_hosts"
