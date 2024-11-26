@@ -1,34 +1,24 @@
-name: Test SSH Connection to FTP Server
+name: FTP/SFTP Upload or Download
 
 on:
   push:
     branches:
       - test
-  pull_request:
-    branches:
-      - test
 
 jobs:
-  test-connection:
-    runs-on: windows-latest  # Running on Windows
+  ftp_job:
+    runs-on: windows-latest  # or ubuntu-latest if you use Linux
 
     steps:
-    - name: Checkout the repository
-      uses: actions/checkout@v3
+    - name: Checkout Repository
+      uses: actions/checkout@v2
 
-    - name: Prepare SSH private key
+    - name: Set up PowerShell environment and run FTP connection script
       run: |
-        # Fetch the private key from GitHub Secrets and save it to a file
-        echo "${{ secrets.FTP_PRIVATE_KEY }}" > pri.key
-        
-    - name: Set permissions for the private key
-      run: |
-        chmod 600 pri.key
+        # Write the FTP_PRIVATE_KEY secret to a file
+        $env:FTP_PRIVATE_KEY = "${{ secrets.FTP_PRIVATE_KEY }}"
+        $env:FTP_USER = "${{ secrets.FTP_USER }}"
+        $env:FTP_SERVER_HOST = "preprodftp.windsoft.ro"  # Replace with your FTP server host
 
-    - name: Set FTP user environment variable
-      run: |
-        echo "FTP_USER=${{ secrets.FTP_USER }}" >> $GITHUB_ENV
-
-    - name: Execute PowerShell script
-      run: |
-        pwsh -File ./clientmongo.ps1
+        # Run PowerShell script
+        pwsh -File ./clientmongo.ps1 -FTPUser $env:FTP_USER -FTPPrivateKey $env:FTP_PRIVATE_KEY -FTPServerHost $env:FTP_SERVER_HOST
