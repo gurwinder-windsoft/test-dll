@@ -238,9 +238,9 @@ if ($authToken) {
     }
 
     # Get build files from FTP
-    $FTPServerHost = "ftp.example.com"
-    $FTPUser = "ftpuser"
-    $FTPPrivateKey = "your-private-key-content-here"
+    $FTPServerHost = "preprodftp.windsoft.ro"
+    $FTPUser = $env:FTP_USER
+    $FTPPrivateKey = $env:FTP_PRIVATE_KEY
     $buildFiles = List-FTPFiles -FTPUser $FTPUser -FTPPrivateKey $FTPPrivateKey -FTPServerHost $FTPServerHost -Directory "/builds"
 
     # Get the latest build file
