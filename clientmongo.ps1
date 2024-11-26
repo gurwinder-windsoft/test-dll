@@ -4,12 +4,6 @@ param (
     [string]$FTPServerHost
 )
 
-# Ensure the .ssh directory exists
-$sshDir = "$env:USERPROFILE\.ssh"
-if (-not (Test-Path $sshDir)) {
-    New-Item -ItemType Directory -Path $sshDir
-}
-
 # Set the private key path and save the private key
 $privateKeyPath = "$sshDir\id_rsa"
 $FTPPrivateKey | Set-Content -Path $privateKeyPath -Force
