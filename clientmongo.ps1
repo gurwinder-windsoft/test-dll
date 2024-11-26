@@ -194,12 +194,16 @@ function Create-Product {
 
     # Ensure product name doesn't have spaces
     $productName = $productName -replace '\s', ''
+    
     $body = @{
         productName  = $productName
         client       = $client  # Pass the client object here
         version      = $version
         latestVersion = $latestZipFile
     } | ConvertTo-Json
+
+    # Debugging: Print the request body to check its structure
+    Write-Host "Request Body: $body"
 
     try {
         # Check if the product exists
@@ -217,6 +221,11 @@ function Create-Product {
         # If the product doesn't exist, create it
         Write-Host "Product $productName not found. Creating the product..."
         $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
+        
+        # Debugging: Print the response from the creation request
+        Write-Host "Create Product Response Status Code: $($createResponse.StatusCode)"
+        Write-Host "Create Product Response Body: $($createResponse.Content)"
+        
         if ($createResponse.StatusCode -eq 201) {
             Write-Host "Product created successfully!"
             return $createResponse.Content | ConvertFrom-Json
@@ -226,6 +235,7 @@ function Create-Product {
         }
     } catch {
         Write-Host "Error creating product: $($_.Exception.Message)"
+        Write-Host "Error details: $($_.Exception.Response)"
         return $null
     }
 }
