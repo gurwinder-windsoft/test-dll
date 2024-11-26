@@ -111,8 +111,9 @@ function List-FTPFiles {
 
     # Fetch the SSH fingerprint of the FTP server and append it to known_hosts
     ssh-keyscan -H $FTPServerHost | Out-File -Append -FilePath $knownHostsPath
+
     # SSH command to list files in the directory
-    $sshCommand = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $FTPUser@$FTPServerHost 'ls $Directory'"
+    $sshCommand = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $FTPUser@$FTPServerHost 'ls -l $Directory'"
     Write-Host "Running SSH command: $sshCommand"
 
     # Execute the SSH command and capture the output
@@ -129,33 +130,29 @@ function List-FTPFiles {
     Remove-Item $privateKeyPath -Force
 }
 
-# Function to get the latest build file from the list of files based on timestamp
+# Function to get the latest build file from the list of files
 function Get-LatestBuildFile {
     param (
         [array]$buildFiles
     )
 
-    # Initialize variables to store the latest file and its timestamp
-    $latestBuild = $null
-    $latestTimestamp = [datetime]::MinValue  # Initialize to a very early date
+    # Regex to match the timestamps and filenames
+    $regex = '(\w+\s\d+\s\d{2}:\d{2})\s+(.+\.zip)'  # Matches timestamp and filename
 
-    # Loop through each file from the ls output
+    # Initialize variables to track the latest file and timestamp
+    $latestTimestamp = [datetime]::MinValue
+    $latestFile = $null
+
     foreach ($file in $buildFiles) {
-        Write-Host "Processing file: $file"  # Debugging line to see raw output
-        
-        # The ls output usually has the following format:
-        # "Nov 26 07:50 Hard_WindNet_1.0.0810.1625.zip"
-        # We need to extract the timestamp (e.g., "Nov 26 07:50")
-        
-        # Match the filename and timestamp format
-        if ($file -match '(\w+\s\d+\s\d{2}:\d{2})\s+(.+)') {
-            $timestampStr = $matches[1]  # Extract the timestamp part (e.g., "Nov 26 07:50")
-            $filename = $matches[2]      # Extract the filename (e.g., "Hard_WindNet_1.0.0810.1625.zip")
-            
+        if ($file -match $regex) {
+            # Extract the timestamp and filename
+            $timestampStr = $matches[1]  # e.g., "Nov 26 07:50"
+            $filename = $matches[2]      # e.g., "Hard_WindNet_1.0.0810.1625.zip"
+
             # Parse the timestamp into a DateTime object
             try {
                 $timestamp = [datetime]::ParseExact($timestampStr, 'MMM dd HH:mm', $null)
-                Write-Host "Parsed timestamp: $timestamp for file: $filename"  # Debugging line
+                Write-Host "Parsed timestamp: $timestamp for file: $filename"  # Debugging
             } catch {
                 Write-Host "Error parsing timestamp: $timestampStr for file: $filename"
                 continue
@@ -164,24 +161,15 @@ function Get-LatestBuildFile {
             # Compare timestamps to find the latest file
             if ($timestamp -gt $latestTimestamp) {
                 $latestTimestamp = $timestamp
-                $latestBuild = $filename
+                $latestFile = $filename
             }
         }
     }
 
-    # Return the latest build file and its timestamp
-    if ($latestBuild) {
-        Write-Host "Found latest build: $latestBuild with timestamp: $latestTimestamp"
-        return $latestBuild
-    } else {
-        Write-Host "No valid build files found."
-        return $null
-    }
-}
-    # Return the latest build file and its timestamp
-    if ($latestBuild) {
-        Write-Host "Found latest build: $latestBuild with timestamp: $latestTimestamp"
-        return $latestBuild
+    # Return the latest file and timestamp
+    if ($latestFile) {
+        Write-Host "Found latest build: $latestFile with timestamp: $latestTimestamp"
+        return $latestFile
     } else {
         Write-Host "No valid build files found."
         return $null
