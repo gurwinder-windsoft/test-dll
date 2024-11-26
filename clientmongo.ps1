@@ -125,7 +125,7 @@ function Get-BuildFiles {
         Write-Host "Fetching build files from FTP server: $sshHost"
 
         # Correct the SSH command construction
-        $command = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $sshUser@$sshHost 'ls $remoteDirectory'"
+        $command = "ssh -v -i $privateKeyPath -o StrictHostKeyChecking=no $sshUser@$sshHost 'ls $remoteDirectory'"
 
         # Invoke the SSH command
         $output = Invoke-Expression $command
