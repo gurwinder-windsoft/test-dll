@@ -83,7 +83,6 @@ function GetOrCreate-Client {
         Write-Host "Error fetching or creating client details: $($_.Exception.Message)"
         return $null
     }
-}
 # Function to list build files from FTP server using SSH
 function List-FTPFiles {
     param (
