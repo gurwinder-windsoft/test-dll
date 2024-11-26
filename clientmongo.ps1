@@ -29,47 +29,9 @@ function Login {
         return $null
     }
 }
-# Function to check if the client exists and return the client object
-function Get-Client {
-    param (
-        [string]$authToken,
-        [string]$clientName
-    )
 
-    $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Client"
-    $headers = @{
-        "Authorization" = "Bearer $authToken"
-    }
-
-    try {
-        Write-Host "Sending request to fetch client details..."
-        $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
-        Write-Host "Response status code: $($response.StatusCode)"
-        Write-Host "Response body: $($response.Content)"
-
-        # If the request is successful, check if the client exists
-        if ($response.StatusCode -eq 200) {
-            $clients = $response.Content | ConvertFrom-Json
-            foreach ($client in $clients) {
-                if ($client.clientName -eq $clientName) {
-                    Write-Host "Client $clientName found."
-                    return $client
-                }
-            }
-            Write-Host "Client $clientName not found."
-            return $null
-        } else {
-            Write-Host "Failed to fetch client details. Status Code: $($response.StatusCode)"
-            return $null
-        }
-    } catch {
-        Write-Host "Error fetching client details: $($_.Exception.Message)"
-        return $null
-    }
-}
-
-# Function to create a client if it doesn't exist
-function Create-Client {
+# Function to check if the client exists and return the client object or create it
+function GetOrCreate-Client {
     param (
         [string]$authToken,
         [string]$clientName,
@@ -87,21 +49,37 @@ function Create-Client {
     } | ConvertTo-Json
 
     try {
-        Write-Host "Creating client: $clientName..."
+        Write-Host "Attempting to create or retrieve client: $clientName..."
+
+        # Send the POST request to create the client (it will check if the client exists)
         $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
-        Write-Host "Response status code: $($response.StatusCode)"
-        Write-Host "Response body: $($response.Content)"
+
+        # If the status code is 201 (Created), the client was created
         if ($response.StatusCode -eq 201) {
             Write-Host "Client $clientName created successfully."
             return $response.Content | ConvertFrom-Json
-        } else {
-            Write-Host "Failed to create client. Status Code: $($response.StatusCode)"
+        }
+        # If the status code is 409 (Conflict), the client already exists
+        elseif ($response.StatusCode -eq 409) {
+            Write-Host "Client $clientName already exists. Retrieving client details..."
+            # Retrieve the client details (via a GET request)
+            $getResponse = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
+            $clients = $getResponse.Content | ConvertFrom-Json
+            foreach ($client in $clients) {
+                if ($client.clientName -eq $clientName) {
+                    Write-Host "Client $clientName found."
+                    return $client
+                }
+            }
+        }
+        else {
+            Write-Host "Failed to create or retrieve client. Status Code: $($response.StatusCode)"
             Write-Host "Response body: $($response.Content)"
         }
     } catch {
-        Write-Host "Error creating client: $($_.Exception.Message)"
-        return $null
+        Write-Host "Error checking or creating client: $($_.Exception.Message)"
     }
+    return $null
 }
 
 # Function to list build files from FTP server using SSH
@@ -245,88 +223,58 @@ function Create-Product {
     Write-Host "Product: $($body.productName)"
     Write-Host "Client: $($body.client.clientName)"
     Write-Host "Version: $($body.version)"
-    Write-Host "Latest ZIP File: $($body.latestVersion)"
+    Write-Host "Latest Zip File: $($body.latestVersion)"
 
     try {
-        # Send the POST request to create the product
         $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
-
         Write-Host "Response status code: $($response.StatusCode)"
         Write-Host "Response body: $($response.Content)"
-
         if ($response.StatusCode -eq 201) {
-            Write-Host "Product $($body.productName) created successfully."
+            Write-Host "Product created successfully."
             return $response.Content | ConvertFrom-Json
         } else {
             Write-Host "Failed to create product. Status Code: $($response.StatusCode)"
-            Write-Host "Response body: $($response.Content)"
+            return $null
         }
     } catch {
         Write-Host "Error creating product: $($_.Exception.Message)"
+        return $null
     }
 }
 
-# Main script logic
+# Main Script Execution
+
+# Step 1: Login and get the authentication token
 $authToken = Login
 
 if ($authToken) {
-    # Clean up any extra spaces or characters from the token
-    $authToken = $authToken.Trim()
-
-    # Ensure the token has no extra characters
-    if ($authToken.StartsWith("Bearer ")) {
-        $authToken = $authToken.Substring(7) # Remove "Bearer " prefix
-    }
-
-    Write-Host "Cleaned Authorization token: $authToken"
-
+    # Step 2: Get or create client
     $clientName = "Aigleclient.2017"
     $clientStatus = "Active"
+    $client = GetOrCreate-Client -authToken $authToken -clientName $clientName -clientStatus $clientStatus
 
-    # Step 1: Get the client details
-    $client = Get-Client -authToken $authToken -clientName $clientName
+    if ($client) {
+        # Step 3: List build files from FTP server
+        $FTPUser = $env:FTP_USER
+        $FTPPrivateKey = $env:FTP_PRIVATE_KEY
+        $FTPServerHost = "preprodftp.windsoft.ro"
+        $Directory = "/mnt/ftpdata/$clientName"
+        
+        $buildFiles = List-FTPFiles -FTPUser $FTPUser -FTPPrivateKey $FTPPrivateKey -FTPServerHost $FTPServerHost -Directory $Directory
 
-    # Check if client doesn't exist, create the client if not found
-    if (-not $client) {
-        Write-Host "Client $clientName not found. Creating the client..."
-        $client = Create-Client -authToken $authToken -clientName $clientName -clientStatus $clientStatus
-        if (-not $client) {
-            Write-Host "Failed to create client, exiting."
-            return  # Exit the script if client creation fails
-        }
-    } else {
-        Write-Host "Client $clientName found."
-    }
+        if ($buildFiles) {
+            # Step 4: Get the latest build file
+            $latestBuild, $version = Get-LatestBuildFile -buildFiles $buildFiles
 
-    # Step 2: List build files from FTP server
-    $FTPUser = $env:FTP_USER
-    $FTPPrivateKey = $env:FTP_PRIVATE_KEY  # Ensure to set the private key correctly
-    $FTPServerHost = "preprodftp.windsoft.ro"
-    $Directory = "/mnt/ftpdata/$clientName"
+            if ($latestBuild) {
+                # Step 5: Check if product exists
+                $product = Get-Product -authToken $authToken -clientName $clientName -productName $clientName
 
-    $buildFiles = List-FTPFiles -FTPUser $FTPUser -FTPPrivateKey $FTPPrivateKey -FTPServerHost $FTPServerHost -Directory $Directory
-
-    if ($buildFiles.Count -gt 0) {
-        Write-Host "Found build files: $($buildFiles -join ', ')"
-        $latestBuild, $version = Get-LatestBuildFile -buildFiles $buildFiles
-        if ($latestBuild) {
-            # Step 3: Get the product details
-            $productName = "Aigle1"  # Hardcoded for now, can be dynamic
-            $existingProduct = Get-Product -authToken $authToken -clientName $clientName -productName $productName
-
-            if (-not $existingProduct) {
-                Write-Host "Product $productName not found. Creating the product..."
-                $product = Create-Product -authToken $authToken -client $client -latestZipFile $latestBuild -version $version
-                Write-Host "Created product: $product"
-            } else {
-                Write-Host "Product $productName already exists."
+                if (-not $product) {
+                    # Step 6: Create product
+                    $newProduct = Create-Product -authToken $authToken -client $client -latestZipFile $latestBuild -version $version
+                }
             }
-        } else {
-            Write-Host "No valid build files found to create the product."
         }
-    } else {
-        Write-Host "No build files found on the FTP server."
     }
-} else {
-    Write-Host "Login failed, exiting."
 }
