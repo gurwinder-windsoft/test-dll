@@ -161,7 +161,7 @@ if ($authToken) {
 
     # Ensure the token has no extra characters
     if ($authToken.StartsWith("Bearer ")) {
-        $authToken = $authToken.Substring(7) # Remove "Bearer " prefix
+        $authToken = $authToken.Substring(7) 
     }
 
     Write-Host "Cleaned Authorization token: $authToken"
