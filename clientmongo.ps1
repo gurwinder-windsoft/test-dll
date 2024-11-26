@@ -17,12 +17,6 @@ $FTPPrivateKey | Set-Content -Path $privateKeyPath -Force
 # Restrict permissions on the private key file
 icacls $privateKeyPath /inheritance:r /grant:r "$($env:USERNAME):(R)"
 
-# Ensure SSH is available
-if (-not (Get-Command ssh -ErrorAction SilentlyContinue)) {
-    Write-Host "SSH is not installed."
-    exit 1
-}
-
 # Add the FTP server's SSH fingerprint to known_hosts (if not already present)
 $knownHostsPath = "$sshDir\known_hosts"
 if (-not (Test-Path $knownHostsPath)) {
