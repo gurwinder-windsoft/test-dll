@@ -113,37 +113,23 @@ function Create-Client {
 }
 
 # Function to fetch build files from FTP server using SSH
-function Get-BuildFiles {
-    $clientName = "Aigleclient.2017"  # Set your client name
-    $remoteDirectory = "/mnt/ftpdata/$clientName"
-    $privateKeyPath = "pri.key"
-    $sshUser = $env:FTP_USER
-    $sshHost = "preprodftp.windsoft.ro"  # FTP host address
-    $buildFiles = @()
+# Assuming FTP_USER is set as an environment variable
+$privateKeyPath = "pri.key"
+$sshUser = $env:FTP_USER  # Fetch the FTP_USER from environment variable
+$sshHost = "92.180.12.186"  # Set your FTP host IP
 
-    try {
-        Write-Host "Fetching build files from FTP server: $sshHost"
+# Construct the SSH command
+$command = "ssh -o StrictHostKeyChecking=no -i $privateKeyPath $sshUser@$sshHost ls"
 
-        # Correct the command by ensuring the @ symbol is treated as part of the string
-        #$command = "ssh -v -i $privateKeyPath -o StrictHostKeyChecking=no $sshUser@$sshHost 'ls $remoteDirectory'"
-        $command = "ssh -v -i $privateKeyPath -o StrictHostKeyChecking=no ${sshUser}@${sshHost} 'ls ${remoteDirectory}'"
+# Output the SSH command for debugging
+Write-Host "SSH Command: $command"
 
-        Write-Host "SSH Command: $command"  # This helps verify the constructed command
-
-        # Execute the SSH command using Invoke-Expression
-        $output = Invoke-Expression $command
-        
-        # Split the output into an array of files
-        $buildFiles = $output -split "`n"
-
-        Write-Host "Build files fetched from FTP server:"
-        $buildFiles | ForEach-Object { Write-Host $_ }
-
-        return $buildFiles
-    } catch {
-        Write-Host "Error fetching build files from FTP server: $($_.Exception.Message)"
-        return @()
-    }
+# Execute the SSH command using Invoke-Expression
+try {
+    $output = Invoke-Expression $command
+    Write-Host "Output from SSH command: $output"
+} catch {
+    Write-Host "Error executing SSH command: $($_.Exception.Message)"
 }
 # Function to get the latest build file
 function Get-LatestBuildFile {
