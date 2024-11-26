@@ -163,13 +163,14 @@ function Get-LatestBuildFile {
 
 # Function to get or create the product
 # Function to get or create the product
-function GetOrCreate-Product {
+# Function to create a product
+function Create-Product {
     param (
         [string]$authToken,
-        [string]$clientName,
-        [string]$productName,
+        [object]$client,
         [string]$latestZipFile,
-        [string]$version
+        [string]$version,
+        [string]$productName
     )
 
     $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
@@ -177,70 +178,44 @@ function GetOrCreate-Product {
         "Authorization" = "Bearer $authToken"
     }
 
+    # Ensure product name doesn't have spaces
+    $productName = $productName -replace '\s', ''
+
+    $body = @{
+        productName  = $productName
+        client       = $client  # Pass the client object here
+        version      = $version
+        latestVersion = $latestZipFile
+    } | ConvertTo-Json
+
     try {
-        # Send the GET request to check if the product exists
-        Write-Host "Sending request to fetch product details..."
-        $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
+        # Check if the product exists
+        $getResponse = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
 
-        Write-Host "Response status code: $($response.StatusCode)"
-        Write-Host "Response body: $($response.Content)"
-
-        if ($response.StatusCode -eq 200) {
+        if ($getResponse.StatusCode -eq 200) {
             # Parse the response to check if the product exists
-            $products = $response.Content | ConvertFrom-Json
-            $product = $products | Where-Object { $_.productName -eq $productName }
-
-            if ($product) {
-                Write-Host "Product $productName found."
-                return $product
-            } else {
-                Write-Host "Product $productName not found. Creating the product..."
+            $products = $getResponse.Content | ConvertFrom-Json
+            foreach ($product in $products) {
+                if ($product.productName -eq $productName) {
+                    Write-Host "Product $productName found."
+                    return $product
+                }
             }
         }
 
-        # If the product was not found, create the product
-        # Prepare the product creation request body
-        $body = @{
-            productName  = $productName
-            clientName   = $clientName  # Assuming we pass the client name in the product creation
-            version      = $version
-            latestVersion = $latestZipFile
-        } | ConvertTo-Json
-
-        Write-Host "Creating product with the following data:"
-        Write-Host $body
-
-        # Send the POST request to create the product
+        # If the product doesn't exist, create it
+        Write-Host "Product $productName not found. Creating the product..."
         $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
 
-        Write-Host "Create response status code: $($createResponse.StatusCode)"
-        Write-Host "Create response body: $($createResponse.Content)"
-
         if ($createResponse.StatusCode -eq 201) {
-            Write-Host "Product $productName created successfully."
+            Write-Host "Product created successfully!"
             return $createResponse.Content | ConvertFrom-Json
         } else {
             Write-Host "Failed to create product. Status Code: $($createResponse.StatusCode)"
-            Write-Host "Response body: $($createResponse.Content)"
             return $null
         }
     } catch {
-        Write-Host "Error fetching or creating product: $($_.Exception.Message)"
-        
-        # Corrected error handling:
-        if ($_.Exception -is [System.Net.WebException]) {
-            # If it's a WebException, we can access the response stream directly.
-            $webException = $_.Exception
-            $response = $webException.Response
-            if ($response) {
-                $reader = New-Object System.IO.StreamReader($response.GetResponseStream())
-                $errorBody = $reader.ReadToEnd()
-                Write-Host "Detailed error response: $errorBody"
-            }
-        } else {
-            Write-Host "No response object available for the error."
-        }
-        
+        Write-Host "Error creating product: $($_.Exception.Message)"
         return $null
     }
 }
@@ -288,11 +263,6 @@ if ($authToken) {
         return
     }
 
-    # Step 4: Get or create the product
-    $product = GetOrCreate-Product -authToken $authToken -clientName $clientName -productName "Aigle1" -latestZipFile $latestZipFile -version $version
-    if ($product) {
-        Write-Host "Product operation completed successfully."
-    } else {
-        Write-Host "Product creation or fetching failed."
-    }
+    # Step 4: Create the product if it doesn't exist
+    $product = Create-Product -authToken $authToken -client $client -latestZipFile $latestZipFile -version $version -productName "Aigle1"
 }
