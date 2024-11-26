@@ -162,6 +162,7 @@ function Get-LatestBuildFile {
 }
 
 # Function to get or create the product
+# Function to get or create the product
 function GetOrCreate-Product {
     param (
         [string]$authToken,
@@ -206,6 +207,9 @@ function GetOrCreate-Product {
             latestVersion = $latestZipFile
         } | ConvertTo-Json
 
+        Write-Host "Creating product with the following data:"
+        Write-Host $body
+
         # Send the POST request to create the product
         $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
 
@@ -222,6 +226,12 @@ function GetOrCreate-Product {
         }
     } catch {
         Write-Host "Error fetching or creating product: $($_.Exception.Message)"
+        if ($_.Exception.Response) {
+            $errorResponse = $_.Exception.Response.GetResponseStream()
+            $reader = New-Object System.IO.StreamReader($errorResponse)
+            $errorBody = $reader.ReadToEnd()
+            Write-Host "Detailed error response: $errorBody"
+        }
         return $null
     }
 }
