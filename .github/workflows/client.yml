@@ -1,4 +1,4 @@
-name: Test SSH Connection to FTP Server and Fetch Latest Build
+name: Test SSH Connection to FTP Server
 
 on:
   push:
@@ -21,29 +21,14 @@ jobs:
         # Fetch the private key from GitHub Secrets and save it to a file
         echo "${{ secrets.FTP_PRIVATE_KEY }}" > pri.key
         
-        # Reformat the private key to ensure proper newlines (for Windows)
-        sed 's/\\n/\n/g' pri.key > formatted_pri.key
-        
-        # Delete the existing pri.key file if it exists (just to be safe)
-        if (Test-Path -Path "pri.key") {
-          Remove-Item -Force pri.key
-        }
-
-        # Move the formatted key to pri.key
-        Move-Item -Path "formatted_pri.key" -Destination "pri.key"
-
-        # Verify the key by checking its validity
-        ssh-keygen -y -f pri.key || { echo "Invalid private key"; exit 1; }
-
-        # Set permissions on the private key (Windows equivalent)
-        icacls pri.key /inheritance:r  # Remove inherited permissions
-        icacls pri.key /grant:r "$env:USERNAME:(R)"  # Grant read permission to the current user only
-
-        # Ensure that no other users have access (important for SSH private key)
-        icacls pri.key /remove "BUILTIN\Users"  # Remove permissions for other users (BUILTIN\Users)
-
-    - name: Run PowerShell script to connect to FTP and process latest build
+    - name: Set permissions for the private key
       run: |
-        # Run the PowerShell script to interact with the FTP server and get the latest build
-        pwsh -File ./clientmongo.ps1  # Adjust the script path as needed
-      shell: bash
+        chmod 600 pri.key
+
+    - name: Set FTP user environment variable
+      run: |
+        echo "FTP_USER=${{ secrets.FTP_USER }}" >> $GITHUB_ENV
+
+    - name: Execute PowerShell script
+      run: |
+        pwsh -File ./clientmongo.ps1
