@@ -118,9 +118,6 @@ function Create-Client {
 }
 
 # Helper Function to fetch files from FTP using SSH/SFTP
-# Full path to ssh (replace with actual path if different)
-$sshPath = "C:\Windows\System32\OpenSSH\ssh.exe"
-
 # Helper Function to fetch files from FTP using SSH/SFTP
 function Get-BuildFilesFromFTP {
     param (
@@ -136,13 +133,15 @@ function Get-BuildFilesFromFTP {
         # Make sure the private key path is enclosed in quotes if it has spaces
         $quotedPrivateKeyPath = "`"$privateKeyPath`""
 
-        # Build the SSH command as a string
-        $command = "$sshPath -i $quotedPrivateKeyPath -o StrictHostKeyChecking=no $userName@$hostName 'ls $remoteDir'"
+        # Prepare the SSH command with proper arguments and quotes
+        $command = "C:\Windows\System32\OpenSSH\ssh.exe"
+        $arguments = "-i $quotedPrivateKeyPath -o StrictHostKeyChecking=no $userName@$hostName 'ls $remoteDir'"
 
-        Write-Host "Running SSH command: $command"
+        # Debug: Print out the full command and arguments
+        Write-Host "Running SSH command: $command $arguments"
 
-        # Use the & (call operator) to execute the SSH command
-        $result = & $command
+        # Use the call operator (&) to run the command with arguments
+        $result = & $command $arguments
 
         # Output the result and return only zip files
         Write-Host "Files found on the FTP server:"
