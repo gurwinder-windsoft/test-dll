@@ -112,7 +112,7 @@ function Create-Client {
     }
 }
 
-# Function to list files in an FTP server using SSH
+# Function to list build files from FTP server using SSH
 function List-FTPFiles {
     param (
         [string]$FTPUser,
@@ -192,7 +192,7 @@ function Get-LatestBuildFile {
     }
 }
 
-# Function to check if the product exists for the client
+# Function to check if the product exists
 function Get-Product {
     param (
         [string]$authToken,
@@ -206,7 +206,7 @@ function Get-Product {
     }
 
     try {
-        Write-Host "Fetching product details for $productName under client $clientName..."
+        Write-Host "Sending request to fetch product details..."
 
         $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
 
@@ -234,7 +234,7 @@ function Get-Product {
     }
 }
 
-# Function to create a product if it doesn't exist
+# Function to create a product
 function Create-Product {
     param (
         [string]$authToken,
@@ -248,24 +248,32 @@ function Create-Product {
         "Authorization" = "Bearer $authToken"
     }
 
+    # Ensure product name doesn't have spaces
+    $productName = "Aigle1"  # Hardcoded for now, can be dynamic if required
+    $clientName = $client.clientName -replace '\s', ''  # Remove spaces from client name
+
     $body = @{
-        productName = "Aigle1"  # Hardcoded for now, can be dynamic based on the build
-        clientId = $client.id
-        buildFile = $latestZipFile
-        version = $version
-        productStatus = "Active"
-    } | ConvertTo-Json
+        productName  = $productName
+        client       = $client  # Pass the client object here
+        version      = $version
+        latestVersion = $latestZipFile
+    } | ConvertTo-Json -Depth 3  # Increase depth for nested client object
+
+    Write-Host "Creating product with the following details:"
+    Write-Host "Product: $($body.productName)"
+    Write-Host "Client: $($body.client.clientName)"
+    Write-Host "Version: $($body.version)"
+    Write-Host "Latest ZIP File: $($body.latestVersion)"
 
     try {
-        Write-Host "Creating product: Aigle1 for client $($client.clientName)..."
-
+        # Send the POST request to create the product
         $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
 
         Write-Host "Response status code: $($response.StatusCode)"
         Write-Host "Response body: $($response.Content)"
 
         if ($response.StatusCode -eq 201) {
-            Write-Host "Product created successfully."
+            Write-Host "Product $($body.productName) created successfully."
             return $response.Content | ConvertFrom-Json
         } else {
             Write-Host "Failed to create product. Status Code: $($response.StatusCode)"
@@ -273,7 +281,6 @@ function Create-Product {
         }
     } catch {
         Write-Host "Error creating product: $($_.Exception.Message)"
-        return $null
     }
 }
 
