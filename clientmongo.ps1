@@ -1,4 +1,3 @@
-# Function to login and retrieve the token from response headers
 function Login {
     $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/User/login"
     $loginCredentials = @{
@@ -6,15 +5,18 @@ function Login {
         Password = "testpasswordadmin"
     }
 
+    # Convert the credentials to JSON format
     $jsonBody = $loginCredentials | ConvertTo-Json
 
     try {
         # Send the POST request and capture the entire response (including status code and headers)
         $response = Invoke-WebRequest -Uri $url -Method Post -Body $jsonBody -ContentType "application/json" -ErrorAction Stop
 
+        # Capture the HTTP status code
         $statusCode = $response.StatusCode
         Write-Host "Response status code: $statusCode"
 
+        # Check if the response contains headers
         if ($response.Headers["Authorization"]) {
             $authToken = $response.Headers["Authorization"]
             Write-Host "Login successful! Authorization token: $authToken"
@@ -27,7 +29,7 @@ function Login {
         Write-Host "Login failed: $($_.Exception.Message)"
         return $null
     }
-
+}
 
 # Function to check if the client exists and return the client object
 function Get-Client {
@@ -49,6 +51,7 @@ function Get-Client {
         Write-Host "Response status code: $($response.StatusCode)"
         Write-Host "Response body: $($response.Content)"
 
+        # If the request is successful, check if the client exists
         if ($response.StatusCode -eq 200) {
             $clients = $response.Content | ConvertFrom-Json
             foreach ($client in $clients) {
@@ -61,7 +64,6 @@ function Get-Client {
             return $null
         } else {
             Write-Host "Failed to fetch client details. Status Code: $($response.StatusCode)"
-            Write-Host "Response body: $($response.Content)"
             return $null
         }
     } catch {
@@ -70,7 +72,7 @@ function Get-Client {
     }
 }
 
-# Function to create a new client
+# Helper Function to Create Client
 function Create-Client {
     param (
         [string]$authToken,
@@ -83,6 +85,7 @@ function Create-Client {
         "Authorization" = "Bearer $authToken"
     }
 
+    # Define the client details
     $clientBody = @{
         clientName  = $clientName
         clientStatus = $clientStatus
@@ -93,6 +96,7 @@ function Create-Client {
         Write-Host "Client Name: $clientName"
         Write-Host "Client Status: $clientStatus"
 
+        # Send the POST request to create the client
         $response = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $clientBody -ContentType "application/json" -ErrorAction Stop       
 
         Write-Host "Response status code: $($response.StatusCode)"
@@ -112,53 +116,22 @@ function Create-Client {
     }
 }
 
-# Function to fetch build files from FTP server using SSH
-# Load the SSH.NET library
-Add-Type -Path "C:\Program Files\PackageManagement\NuGet\Packages\SSH.NET.2016.1.0\lib\net45\Renci.SshNet.dll"
-
-# Function to create an SSH connection and execute a command
-function Execute-SSHCommand {
+# Function to get the latest build from FTP server
+function Get-LatestBuildFile {
     param (
-        [string]$host,
-        [string]$user,
-        [string]$privateKeyPath,
-        [string]$command
+        [array]$buildFiles
     )
 
-    # Create a new SSH client
-    $sshClient = New-Object Renci.SshNet.SshClient($host, $user, [Renci.SshNet.PrivateKeyFile]::new($privateKeyPath))
-    
-    try {
-        # Connect to the SSH server
-        $sshClient.Connect()
-        
-        # Execute the command
-        $output = $sshClient.RunCommand($command)
-        Write-Host "Output: $($output.Result)"
-        
-        # Disconnect the SSH session
-        $sshClient.Disconnect()
-    } catch {
-        Write-Host "Error executing SSH command: $($_.Exception.Message)"
-    }
-}
-
-# Parameters for SSH connection
-$host = "92.180.12.186"
-$user = $env:FTP_USER  # Ensure this environment variable is set in GitHub Actions
-$privateKeyPath = "pri.key"  # Path to your private key
-$command = "ls /mnt/ftpdata"  # Command to list files
-
-# Execute the SSH command
-Execute-SSHCommand -host $host -user $user -privateKeyPath $privateKeyPath -command $command
-
+    # Updated regex to match both 3-part and 4-part versions (e.g., 2.0.0 or 2.0.0.1)
     $regex = 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip'
 
-    $latestBuild = $buildFiles | Where-Object { $_ -match $regex }
+    # Try to match the latest build file
+    $latestBuild = $buildFiles | Where-Object { $_.Name -match $regex }
 
     if ($latestBuild) {
-        $version = ($latestBuild -replace 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip', '$1')
-        Write-Host "Found latest build: $($latestBuild) with version: $version"
+        # Extract version (3 or 4 parts)
+        $version = ($latestBuild.Name -replace 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip', '$1')
+        Write-Host "Found latest build: $($latestBuild.Name) with version: $version"
         return $latestBuild, $version
     } else {
         Write-Host "No valid build files found."
@@ -166,12 +139,14 @@ Execute-SSHCommand -host $host -user $user -privateKeyPath $privateKeyPath -comm
     }
 }
 
-# Main script execution
+# Main script logic
 $authToken = Login
 
 if ($authToken) {
+    # Clean up any extra spaces or characters from the token
     $authToken = $authToken.Trim()
 
+    # Ensure the token has no extra characters
     if ($authToken.StartsWith("Bearer ")) {
         $authToken = $authToken.Substring(7) # Remove "Bearer " prefix
     }
@@ -181,6 +156,7 @@ if ($authToken) {
     $clientName = "Aigleclient.2017"
     $clientStatus = "Active"
 
+    # Step 1: Get the client details
     $client = Get-Client -authToken $authToken -clientName $clientName
 
     if (-not $client) {
@@ -192,18 +168,23 @@ if ($authToken) {
         }
     }
 
-    $buildFiles = Get-BuildFiles
+    # Step 2: Connect to the FTP server using SSH (from GitHub Actions)
+    $ftpServer = "92.180.12.186"
+    $sshKeyPath = "$env:GITHUB_WORKSPACE\pri.key"
+    $ftpUser = $env:FTP_USER
 
-    if ($buildFiles.Count -gt 0) {
-        $latestBuild, $version = Get-LatestBuildFile -buildFiles $buildFiles
-        if ($latestBuild) {
-            Write-Host "Latest build: $latestBuild with version: $version"
-        } else {
-            Write-Host "No valid build files found."
-        }
+    # Test SSH connection to FTP server
+    Write-Host "Testing SSH connection to FTP server..."
+    $sshCommand = "ssh -o StrictHostKeyChecking=no -i $sshKeyPath $ftpUser@$ftpServer ls"
+    $result = Invoke-Expression $sshCommand
+
+    if ($result) {
+        Write-Host "SSH connection successful. Listing files on FTP server: $result"
     } else {
-        Write-Host "No files found on FTP server."
+        Write-Host "Failed to connect to FTP server."
     }
+
+    # Here you can include the logic for uploading/downloading files if needed.
 } else {
     Write-Host "Authorization failed. Exiting."
 }
