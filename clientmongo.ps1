@@ -125,7 +125,8 @@ function Get-BuildFiles {
         Write-Host "Fetching build files from FTP server: $sshHost"
 
         # Correct the command by ensuring the @ symbol is treated as part of the string
-        $command = "ssh -v -i $privateKeyPath -o StrictHostKeyChecking=no $sshUser@$sshHost 'ls $remoteDirectory'"
+        #$command = "ssh -v -i $privateKeyPath -o StrictHostKeyChecking=no $sshUser@$sshHost 'ls $remoteDirectory'"
+        $command = "ssh -v -i $privateKeyPath -o StrictHostKeyChecking=no ${sshUser}@${sshHost} 'ls ${remoteDirectory}'"
 
         Write-Host "SSH Command: $command"  # This helps verify the constructed command
 
