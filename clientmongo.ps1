@@ -162,6 +162,7 @@ function Get-LatestBuildFile {
 }
 
 # Function to get or create the product
+# Function to get or create the product
 function GetOrCreate-Product {
     param (
         [string]$authToken,
@@ -226,13 +227,18 @@ function GetOrCreate-Product {
     } catch {
         Write-Host "Error fetching or creating product: $($_.Exception.Message)"
         
-        # If there's a response object, capture the error content from it
-        if ($_.Exception.Response) {
-            $response = $_.Exception.Response
-            $errorBody = $response.Content.ReadAsStringAsync().Result
-            Write-Host "Detailed error response: $errorBody"
+        # Corrected error handling:
+        if ($_.Exception -is [System.Net.WebException]) {
+            # If it's a WebException, we can access the response stream directly.
+            $webException = $_.Exception
+            $response = $webException.Response
+            if ($response) {
+                $reader = New-Object System.IO.StreamReader($response.GetResponseStream())
+                $errorBody = $reader.ReadToEnd()
+                Write-Host "Detailed error response: $errorBody"
+            }
         } else {
-            Write-Host "No response object available."
+            Write-Host "No response object available for the error."
         }
         
         return $null
