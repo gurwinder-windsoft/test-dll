@@ -35,12 +35,10 @@ function GetOrCreate-Client {
         [string]$clientName,
         [string]$clientStatus
     )
-
     $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Client"
     $headers = @{
         "Authorization" = "Bearer $authToken"
     }
-
     try {
         # Send the GET request to check if the client exists
         $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
@@ -61,7 +59,6 @@ function GetOrCreate-Client {
                     clientName  = $clientName
                     clientStatus = $clientStatus
                 } | ConvertTo-Json
-
                 # Send POST request to create the client
                 $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
                 Write-Host "Create response status code: $($createResponse.StatusCode)"
@@ -98,25 +95,21 @@ function List-FTPFiles {
     if (-not (Test-Path $sshDir)) {
         New-Item -ItemType Directory -Path $sshDir
     }
-
     # Save the private key to a file
     $privateKeyPath = "$sshDir\id_rsa"
     Set-Content -Path $privateKeyPath -Value $FTPPrivateKey -Force
     # Set correct permissions for the private key file
     icacls $privateKeyPath /inheritance:r /grant:r "$($env:USERNAME):(R)"
-
     # Add the FTP server's SSH fingerprint to known_hosts
     $knownHostsPath = "$sshDir\known_hosts"
     if (-not (Test-Path $knownHostsPath)) {
         New-Item -ItemType File -Path $knownHostsPath -Force
     }
-
     # Fetch the SSH fingerprint of the FTP server and append it to known_hosts
     ssh-keyscan -H $FTPServerHost | Out-File -Append -FilePath $knownHostsPath
     # SSH command to list files in the directory
     $sshCommand = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $FTPUser@$FTPServerHost 'ls -l $Directory'"
     Write-Host "Running SSH command: $sshCommand"
-
     # Execute the SSH command and capture the output
     $result = Invoke-Expression $sshCommand
     if ($result) {
@@ -126,7 +119,6 @@ function List-FTPFiles {
         Write-Host "Failed to connect to the FTP server or list files."
         return $null
     }
-
     # Clean up by removing the private key file after use
     Remove-Item $privateKeyPath -Force
 }
@@ -136,20 +128,16 @@ function Get-LatestBuildFile {
     param (
         [array]$buildFiles
     )
-
     # Regex to match the timestamps and filenames
     $regex = '(\w+\s\d+\s\d{2}:\d{2})\s+(.+\.zip)'  # Matches timestamp and filename
-
     # Initialize variables to track the latest file and timestamp
     $latestTimestamp = [datetime]::MinValue
     $latestFile = $null
-
     foreach ($file in $buildFiles) {
         if ($file -match $regex) {
             # Extract the timestamp and filename
             $timestampStr = $matches[1]  # e.g., "Nov 26 07:50"
             $filename = $matches[2]      # e.g., "Hard_WindNet_1.0.0810.1625.zip"
-
             # Parse the timestamp into a DateTime object
             try {
                 $timestamp = [datetime]::ParseExact($timestampStr, 'MMM dd HH:mm', $null)
@@ -158,7 +146,6 @@ function Get-LatestBuildFile {
                 Write-Host "Error parsing timestamp: $timestampStr for file: $filename"
                 continue
             }
-
             # Compare timestamps to find the latest file
             if ($timestamp -gt $latestTimestamp) {
                 $latestTimestamp = $timestamp
@@ -166,7 +153,6 @@ function Get-LatestBuildFile {
             }
         }
     }
-
     # Return the latest file and timestamp
     if ($latestFile) {
         Write-Host "Found latest build: $latestFile with timestamp: $latestTimestamp"
@@ -186,12 +172,10 @@ function Create-Product {
         [string]$version,
         [string]$productName
     )
-
     $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
     $headers = @{
         "Authorization" = "Bearer $authToken"
     }
-
     # Ensure product name doesn't have spaces
     $productName = $productName -replace '\s', ''
     # If version is not provided, extract it from the latestZipFile (e.g., "Hard_WindNet_125.zip")
@@ -200,14 +184,12 @@ function Create-Product {
     }
     # Debugging: Print the request body to check its structure
     Write-Host "Request Body: $body"
-
     $body = @{
         productName  = $productName
         client       = $client  # Pass the client object here
         version      = $version  # Ensure version is set
         latestVersion = $latestZipFile
     } | ConvertTo-Json
-
     try {
         # Check if the product exists
         $getResponse = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
@@ -224,11 +206,9 @@ function Create-Product {
         # If the product doesn't exist, create it
         Write-Host "Product $productName not found. Creating the product..."
         $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
-        
         # Debugging: Print the response from the creation request
         Write-Host "Create Product Response Status Code: $($createResponse.StatusCode)"
         Write-Host "Create Product Response Body: $($createResponse.Content)"
-        
         if ($createResponse.StatusCode -eq 201) {
             Write-Host "Product created successfully!"
             return $createResponse.Content | ConvertFrom-Json
@@ -243,6 +223,7 @@ function Create-Product {
         return $null
     }
 }
+
 # Main script logic
 $authToken = Login
 if ($authToken) {
@@ -256,7 +237,6 @@ if ($authToken) {
     $clientStatus = "Active"
     # Step 1: Get or create the client
     $client = GetOrCreate-Client -authToken $authToken -clientName $clientName -clientStatus $clientStatus
-
     if (-not $client) {
         Write-Host "Failed to get or create client, exiting."
         return  # Exit if client creation fails
@@ -267,7 +247,6 @@ if ($authToken) {
     $FTPPrivateKey = $env:FTP_PRIVATE_KEY
     $Directory = "/mnt/ftpdata/$clientName"
     $buildFiles = List-FTPFiles -FTPUser $FTPUser -FTPPrivateKey $FTPPrivateKey -FTPServerHost $FTPServerHost -Directory $Directory
-
     if (-not $buildFiles) {
         Write-Host "No build files found, exiting."
         return
