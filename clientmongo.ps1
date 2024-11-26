@@ -130,25 +130,38 @@ function List-FTPFiles {
     Remove-Item $privateKeyPath -Force
 }
 
-# Function to get the latest build file from the list of files
+# Function to get the latest build file from the list of files based on timestamp
 function Get-LatestBuildFile {
     param (
         [array]$buildFiles
     )
 
-    # Updated regex to match both 3-part and 4-part versions (e.g., 2.0.0 or 2.0.0.1)
-    $regex = 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip'
+    # Initialize variables to store the latest file and its timestamp
+    $latestBuild = $null
+    $latestTimestamp = [datetime]::MinValue  # Initialize to a very early date
 
-    # Try to match the latest build file
-    $latestBuild = $buildFiles | Where-Object { $_ -match $regex }
+    # Loop through each build file
+    foreach ($file in $buildFiles) {
+        # Use regex to extract timestamp from the filename (assuming the format is consistent)
+        if ($file -match 'Hard_WindNet_(\d+)\.(\d+)\.(\d+)(_\d{14})?\.zip') {
+            # Extract the timestamp portion (we assume it's the last 14 digits in the filename)
+            $timestampStr = $matches[4] -replace '_', ''  # Remove underscore if necessary
+            $timestamp = [datetime]::ParseExact($timestampStr, 'yyyyMMddHHmmss', $null)
+            # Compare timestamps to find the latest file
+            if ($timestamp -gt $latestTimestamp) {
+                $latestTimestamp = $timestamp
+                $latestBuild = $file
+            }
+        }
+    }
+
+    # Return the latest build file and its timestamp
     if ($latestBuild) {
-        # Extract version (3 or 4 parts)
-        $version = ($latestBuild -replace 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip', '$1')
-        Write-Host "Found latest build: $latestBuild with version: $version"
-        return $latestBuild, $version
+        Write-Host "Found latest build: $latestBuild with timestamp: $latestTimestamp"
+        return $latestBuild
     } else {
         Write-Host "No valid build files found."
-        return $null, $null
+        return $null
     }
 }
 
@@ -189,7 +202,6 @@ function Create-Product {
                 }
             }
         }
-
         # If the product doesn't exist, create it
         Write-Host "Product $productName not found. Creating the product..."
         $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
