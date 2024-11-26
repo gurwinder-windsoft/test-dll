@@ -194,16 +194,19 @@ function Create-Product {
 
     # Ensure product name doesn't have spaces
     $productName = $productName -replace '\s', ''
-    
+    # If version is not provided, extract it from the latestZipFile (e.g., "Hard_WindNet_125.zip")
+    if (-not $version) {
+        $version = $latestZipFile -replace ".*_(\d+)\.zip", '$1'  # Extract the version number from the filename
+    }
+    # Debugging: Print the request body to check its structure
+    Write-Host "Request Body: $body"
+
     $body = @{
         productName  = $productName
         client       = $client  # Pass the client object here
-        version      = $version
+        version      = $version  # Ensure version is set
         latestVersion = $latestZipFile
     } | ConvertTo-Json
-
-    # Debugging: Print the request body to check its structure
-    Write-Host "Request Body: $body"
 
     try {
         # Check if the product exists
@@ -231,6 +234,7 @@ function Create-Product {
             return $createResponse.Content | ConvertFrom-Json
         } else {
             Write-Host "Failed to create product. Status Code: $($createResponse.StatusCode)"
+            Write-Host "Response Content: $($createResponse.Content)"
             return $null
         }
     } catch {
@@ -239,7 +243,6 @@ function Create-Product {
         return $null
     }
 }
-
 # Main script logic
 $authToken = Login
 if ($authToken) {
