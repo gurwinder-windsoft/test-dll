@@ -27,7 +27,7 @@ function Login {
         Write-Host "Login failed: $($_.Exception.Message)"
         return $null
     }
-}
+
 
 # Function to check if the client exists and return the client object
 function Get-Client {
