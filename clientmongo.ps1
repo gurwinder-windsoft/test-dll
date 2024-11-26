@@ -268,10 +268,10 @@ if ($authToken) {
     }
 
     # Step 2: List build files from FTP
-    $FTPUser = "yourFTPUser"
-    $FTPPrivateKey = "yourFTPPrivateKey"
-    $FTPServerHost = "yourFTPServerHost"
-    $Directory = "/path/to/builds"
+    $FTPUser = $env:FTP_USER
+    $FTPPrivateKey = $env:FTP_PRIVATE_KEY
+    $FTPServerHost = "preprodftp.windsoft.ro"
+    $Directory = "/mnt/ftpdata/$clientName"
 
     $buildFiles = List-FTPFiles -FTPUser $FTPUser -FTPPrivateKey $FTPPrivateKey -FTPServerHost $FTPServerHost -Directory $Directory
 
