@@ -130,12 +130,19 @@ function Get-BuildFilesFromFTP {
     Write-Host "Listing files from remote FTP directory $remoteDir..."
 
     try {
-        # Construct the SSH command
-        $sshCommand = "ssh -i `"$privateKeyPath`" -o StrictHostKeyChecking=no $userName@$hostName `ls $remoteDir`"
+        # Make sure the private key path is enclosed in quotes if it has spaces
+        $quotedPrivateKeyPath = "`"$privateKeyPath`""
 
-        # Run the ssh command and capture the output
-        $result = & $sshCommand
+        # Build the SSH command as a string
+        $command = "ssh -i $quotedPrivateKeyPath -o StrictHostKeyChecking=no $userName@$hostName 'ls $remoteDir'"
 
+        # Debug: Output the full SSH command to verify
+        Write-Host "Running SSH command: $command"
+
+        # Use the & (call operator) to execute the SSH command
+        $result = & $command
+
+        # Output the result and return only zip files
         Write-Host "Files found on the FTP server:"
         Write-Host $result
         return $result -split "`n" | Where-Object { $_ -match ".*\.zip$" }  # Return only zip files
