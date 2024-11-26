@@ -267,10 +267,10 @@ if ($authToken) {
         Write-Host "Client $clientName processed successfully."
 
         # Step 2: List files from FTP server
-        $FTPUser = "your_ftp_username"
-        $FTPPrivateKey = "your_private_key"  # Ensure private key is loaded here
-        $FTPServerHost = "ftp.server.com"
-        $Directory = "/path/to/builds"
+        $FTPUser = $env:FTP_USER
+        $FTPPrivateKey = $env:FTP_PRIVATE_KEY  # Ensure private key is loaded here
+        $FTPServerHost = "preprodftp.windsoft.ro"
+        $Directory = "/mnt/ftpdata/$clientName"
 
         $buildFiles = List-FTPFiles -FTPUser $FTPUser -FTPPrivateKey $FTPPrivateKey -FTPServerHost $FTPServerHost -Directory $Directory
 
