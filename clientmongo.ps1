@@ -124,11 +124,14 @@ function GetOrCreate-Product {
     )
     $url = "https://preprodapi.syncnotifyhub.windsoft.ro/api/Product"
     $headers = @{ "Authorization" = "Bearer $authToken" }
+    
     try {
+        # Step 1: Check if the product exists
         $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -ContentType "application/json" -ErrorAction Stop
         if ($response.StatusCode -eq 200) {
             $products = $response.Content | ConvertFrom-Json
             $existingProduct = $products | Where-Object { $_.productName -eq $productName }
+            
             if ($existingProduct) {
                 Write-Host "Product $productName found."
                 return $existingProduct
@@ -143,9 +146,14 @@ function GetOrCreate-Product {
                 
                 # Log the body to see the data sent
                 Write-Host "Creating product with body: $body"
-
+                
+                # Step 2: Create the product
                 $createResponse = Invoke-WebRequest -Uri $url -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
-
+                
+                # Log status and response body for debugging
+                Write-Host "Response Status Code: $($createResponse.StatusCode)"
+                Write-Host "Response Body: $($createResponse.Content)"
+                
                 if ($createResponse.StatusCode -eq 201) {
                     Write-Host "Product $productName created successfully."
                     return $createResponse.Content | ConvertFrom-Json
