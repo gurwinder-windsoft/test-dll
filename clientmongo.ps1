@@ -168,23 +168,36 @@ if ($authToken) {
         }
     }
 
-    # Step 2: Connect to the FTP server using SSH (from GitHub Actions)
-    $ftpServer = "92.180.12.186"
-    $sshKeyPath = "$env:GITHUB_WORKSPACE\pri.key"
-    $ftpUser = $env:FTP_USER
+# Step 2: Connect to the FTP server using SSH (from GitHub Actions)
+$ftpServer = "92.180.12.186"
+$sshKeyPath = "$env:GITHUB_WORKSPACE\pri.key"
+$ftpUser = $env:FTP_USER
 
-    # Test SSH connection to FTP server
-    Write-Host "Testing SSH connection to FTP server..."
-    $sshCommand = "ssh -o StrictHostKeyChecking=no -i $sshKeyPath $ftpUser@$ftpServer ls"
+# Ensure the SSH private key exists
+if (-Not (Test-Path $sshKeyPath)) {
+    Write-Host "SSH private key not found at: $sshKeyPath"
+    exit 1
+}
+
+# Test SSH connection to FTP server
+Write-Host "Testing SSH connection to FTP server..."
+
+# Construct the ssh command and ensure $sshKeyPath is properly quoted
+$sshCommand = "ssh -o StrictHostKeyChecking=no -i `"$sshKeyPath`" $ftpUser@$ftpServer ls"
+
+# Debugging: Output the command to see how it is formed
+Write-Host "SSH Command: $sshCommand"
+
+# Run the SSH command
+try {
     $result = Invoke-Expression $sshCommand
 
+    # Check if the result contains any output
     if ($result) {
         Write-Host "SSH connection successful. Listing files on FTP server: $result"
     } else {
-        Write-Host "Failed to connect to FTP server."
+        Write-Host "SSH connection failed or no files returned."
     }
-
-    # Here you can include the logic for uploading/downloading files if needed.
-} else {
-    Write-Host "Authorization failed. Exiting."
+} catch {
+    Write-Host "Failed to connect to FTP server. Error: $_"
 }
