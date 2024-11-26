@@ -4,8 +4,14 @@ param (
     [string]$FTPServerHost
 )
 
-# Set the private key path and save it
-$privateKeyPath = "$env:USERPROFILE\.ssh\id_rsa"
+# Ensure the .ssh directory exists
+$sshDir = "$env:USERPROFILE\.ssh"
+if (-not (Test-Path $sshDir)) {
+    New-Item -ItemType Directory -Path $sshDir
+}
+
+# Set the private key path and save the private key
+$privateKeyPath = "$sshDir\id_rsa"
 $FTPPrivateKey | Set-Content -Path $privateKeyPath -Force
 
 # Ensure SSH is available
@@ -15,7 +21,11 @@ if (-not (Get-Command ssh -ErrorAction SilentlyContinue)) {
 }
 
 # Add the FTP server's SSH fingerprint to known_hosts (if not already present)
-ssh-keyscan -H $FTPServerHost | Out-File -Append -FilePath "$env:USERPROFILE\.ssh\known_hosts"
+$knownHostsPath = "$sshDir\known_hosts"
+if (-not (Test-Path $knownHostsPath)) {
+    New-Item -ItemType File -Path $knownHostsPath -Force
+}
+ssh-keyscan -H $FTPServerHost | Out-File -Append -FilePath $knownHostsPath
 
 # Test SSH connection to the FTP server
 Write-Host "Testing SSH connection to $FTPServerHost..."
