@@ -133,7 +133,6 @@ function Get-BuildFilesFromFTP {
         # Make sure the private key path is enclosed in quotes if it has spaces
         $quotedPrivateKeyPath = "`"$privateKeyPath`""
 
-        # Build the SSH command as a string
         $command = "ssh -i $quotedPrivateKeyPath -o StrictHostKeyChecking=no $userName@$hostName 'ls $remoteDir'"
 
         # Debug: Output the full SSH command to verify
