@@ -73,7 +73,6 @@ function Get-Client {
     }
 }
 
-# Function to list files from FTP server using SSH
 function List-FTPFiles {
     param (
         [string]$FTPUser,
@@ -119,7 +118,7 @@ function List-FTPFiles {
     $result = Invoke-Expression $sshCommand
 
     if ($result) {
-        Write-Host "SSH connection successful. Listing files in $Directory:"
+        Write-Host "SSH connection successful. Listing files in ${Directory}:"
         return $result.Split("`n") | Where-Object { $_ -ne "" }  # Split by line and remove empty lines
     } else {
         Write-Host "Failed to connect to the FTP server or list files."
