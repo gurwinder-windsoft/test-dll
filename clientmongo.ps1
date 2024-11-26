@@ -140,17 +140,30 @@ function Get-LatestBuildFile {
     $latestBuild = $null
     $latestTimestamp = [datetime]::MinValue  # Initialize to a very early date
 
-    # Loop through each build file
+    # Loop through each file from the ls output
     foreach ($file in $buildFiles) {
-        # Use regex to extract timestamp from the filename (assuming the format is consistent)
-        if ($file -match 'Hard_WindNet_(\d+)\.(\d+)\.(\d+)(_\d{14})?\.zip') {
-            # Extract the timestamp portion (we assume it's the last 14 digits in the filename)
-            $timestampStr = $matches[4] -replace '_', ''  # Remove underscore if necessary
-            $timestamp = [datetime]::ParseExact($timestampStr, 'yyyyMMddHHmmss', $null)
+        # The ls output usually has the following format:
+        # "Nov 26 07:50 Hard_WindNet_1.0.0810.1625.zip"
+        # We need to extract the timestamp (e.g., "Nov 26 07:50")
+        
+        # Match the filename and timestamp format
+        if ($file -match '(\w+\s\d+\s\d{2}:\d{2})\s+(.+)') {
+            $timestampStr = $matches[1]  # Extract the timestamp part (e.g., "Nov 26 07:50")
+            $filename = $matches[2]      # Extract the filename (e.g., "Hard_WindNet_1.0.0810.1625.zip")
+            
+            # Parse the timestamp into a DateTime object
+            try {
+                $timestamp = [datetime]::ParseExact($timestampStr, 'MMM dd HH:mm', $null)
+                Write-Host "Parsed timestamp: $timestamp for file: $filename"  # Debugging line
+            } catch {
+                Write-Host "Error parsing timestamp: $timestampStr for file: $filename"
+                continue
+            }
+
             # Compare timestamps to find the latest file
             if ($timestamp -gt $latestTimestamp) {
                 $latestTimestamp = $timestamp
-                $latestBuild = $file
+                $latestBuild = $filename
             }
         }
     }
