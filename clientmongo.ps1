@@ -113,7 +113,6 @@ function List-FTPFiles {
 
     # Fetch the SSH fingerprint of the FTP server and append it to known_hosts
     ssh-keyscan -H $FTPServerHost | Out-File -Append -FilePath $knownHostsPath
-
     # SSH command to list files in the directory
     $sshCommand = "ssh -i $privateKeyPath -o StrictHostKeyChecking=no $FTPUser@$FTPServerHost 'ls -l $Directory'"
     Write-Host "Running SSH command: $sshCommand"
