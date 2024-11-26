@@ -113,36 +113,44 @@ function Create-Client {
 }
 
 # Function to fetch build files from FTP server using SSH
-# Assuming FTP_USER is set as an environment variable
-$privateKeyPath = "pri.key"  # Path to the private key
-$sshUser = $env:FTP_USER     # Fetch the FTP_USER from the environment variable
-$sshHost = "92.180.12.186"   # Set your FTP host IP or domain name
+# Load the SSH.NET library
+Add-Type -Path "C:\Program Files\PackageManagement\NuGet\Packages\SSH.NET.2016.1.0\lib\net45\Renci.SshNet.dll"
 
-# Check if the environment variable is set
-if (-not $sshUser) {
-    Write-Host "Error: FTP_USER environment variable is not set."
-    return
-}
-
-# Construct the SSH command
-$command = "ssh -o StrictHostKeyChecking=no -i $privateKeyPath $sshUser@$sshHost ls /mnt/ftpdata"
-
-# Output the SSH command for debugging
-Write-Host "SSH Command: $command"
-
-# Execute the SSH command using Start-Process (more reliable for external commands like SSH)
-try {
-    # Run the SSH command and capture the output
-    $output = & ssh -o StrictHostKeyChecking=no -i $privateKeyPath $sshUser@$sshHost "ls /mnt/ftpdata"
-    Write-Host "Output from SSH command: $output"
-} catch {
-    Write-Host "Error executing SSH command: $($_.Exception.Message)"
-}
-# Function to get the latest build file
-function Get-LatestBuildFile {
+# Function to create an SSH connection and execute a command
+function Execute-SSHCommand {
     param (
-        [array]$buildFiles
+        [string]$host,
+        [string]$user,
+        [string]$privateKeyPath,
+        [string]$command
     )
+
+    # Create a new SSH client
+    $sshClient = New-Object Renci.SshNet.SshClient($host, $user, [Renci.SshNet.PrivateKeyFile]::new($privateKeyPath))
+    
+    try {
+        # Connect to the SSH server
+        $sshClient.Connect()
+        
+        # Execute the command
+        $output = $sshClient.RunCommand($command)
+        Write-Host "Output: $($output.Result)"
+        
+        # Disconnect the SSH session
+        $sshClient.Disconnect()
+    } catch {
+        Write-Host "Error executing SSH command: $($_.Exception.Message)"
+    }
+}
+
+# Parameters for SSH connection
+$host = "92.180.12.186"
+$user = $env:FTP_USER  # Ensure this environment variable is set in GitHub Actions
+$privateKeyPath = "pri.key"  # Path to your private key
+$command = "ls /mnt/ftpdata"  # Command to list files
+
+# Execute the SSH command
+Execute-SSHCommand -host $host -user $user -privateKeyPath $privateKeyPath -command $command
 
     $regex = 'Hard_WindNet_(\d+\.\d+\.\d+(\.\d+)?)_\d{14}\.zip'
 
