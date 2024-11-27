@@ -14,7 +14,7 @@ function Export-PreprodData {
     )
 
     try {
-        $mongoExportCommand = "mongoexport --uri=`"$preprodUri`" --db=SyncNotifyHubService --collection=$collectionName --out=`"$exportPath`" --jsonArray --authenticationDatabase=admin"
+        $mongoExportCommand = "C:\mongodb-tools\bin\mongoexport.exe --uri=`"$preprodUri`" --db=SyncNotifyHubService --collection=$collectionName --out=`"$exportPath`" --jsonArray --authenticationDatabase=admin"
         Write-Host "Exporting $collectionName from preprod..."
         Invoke-Expression $mongoExportCommand
         Write-Host "Exported $collectionName successfully to $exportPath"
