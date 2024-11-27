@@ -26,6 +26,9 @@ jobs:
           $env:PATH = "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin;" + $env:PATH
           Write-Host "Current PATH: $env:PATH"
 
+          # Verify that mongoexport.exe is recognized by PowerShell
+          Get-Command -Name "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe"
+
           # Define collections to export and import
           $collections = @("Client", "User")
 
@@ -42,4 +45,3 @@ jobs:
             Write-Host "Importing $collectionName data into prod"
             & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$env:PRODURI --db=SyncNotifyHubService --collection=$collectionName --file=$exportPath --jsonArray --upsert --verbose 
             Write-Host "Imported $collectionName data into prod"
-          }
