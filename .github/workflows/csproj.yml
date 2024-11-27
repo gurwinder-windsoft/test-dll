@@ -3,27 +3,22 @@ name: MongoDB Export and Import
 on:
   push:
     branches:
-      - test  # Trigger the workflow on push to the main branch
+      - test  # Trigger the workflow on push to the 'test' branch
 
 jobs:
   mongo-export-import:
     runs-on: windows-latest  # Use Windows runner for PowerShell
 
     steps:
+    # Step 1: Checkout Repository
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    # Step 3: Install MongoDB Tools
-    - name: Install MongoDB Tools
-      run: |
-        choco install mongodb-tools
-
-    # Step 4: Set up environment variables for MongoDB credentials
+    # Step 2: Set up MongoDB credentials
     - name: Set up MongoDB credentials
       env:
         PREPRODURI: ${{ secrets.PREPRODURI }}
         PRODURI: ${{ secrets.PRODURI }}
       run: |
         # Run the PowerShell script, passing the export path
-        pwsh -Command |
-          . ${{ github.workspace }}\scripts\mongo.ps1 -exportPath "$env:GITHUB_WORKSPACE\$collectionName.json"
+        pwsh -Command "& .\mongo.ps1 -exportPath \"$env:GITHUB_WORKSPACE\$collectionName.json\""
