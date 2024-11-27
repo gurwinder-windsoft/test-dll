@@ -46,5 +46,8 @@ jobs:
           Write-Host "mongoexport found in PATH"
         }
 
+        # Explicitly run mongoexport with full path using & operator
+        Write-Host "Using mongoexport located at: C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe"
+        
         # Run the PowerShell script (ensure mongo.ps1 is in the root of your repository)
         pwsh -Command "& .\mongo.ps1"
