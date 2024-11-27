@@ -7,7 +7,6 @@ param (
 Write-Host "Collection: $collectionName"
 Write-Host "Export path: $exportPath"
 
-# Function to export data from preprod
 function Export-PreprodData {
     param (
         [string]$collectionName
