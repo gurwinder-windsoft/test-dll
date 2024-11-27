@@ -17,16 +17,21 @@ jobs:
     # Step 2: Download and install MongoDB Tools
     - name: Install MongoDB Tools
       run: |
-        # Download MongoDB tools and unzip
-        Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.5.1.zip" -OutFile "mongodb-tools.zip"
+        # Download MongoDB tools and unzip them
+        Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.10.0.zip" -OutFile "mongodb-tools.zip"
         Expand-Archive -Path "mongodb-tools.zip" -DestinationPath "C:\mongodb-tools"
         
-        # Verify MongoDB tools installation
-        Write-Host "Contents of C:\mongodb-tools\bin:"
-        Get-ChildItem -Path "C:\mongodb-tools\bin"
-        
-        # Add MongoDB tools to PATH
-        echo "PATH=C:\mongodb-tools\bin:$PATH" >> $GITHUB_ENV
+        # Add MongoDB tools to PATH and persist across steps
+        echo "C:\mongodb-tools\bin" >> $GITHUB_ENV
+
+        # Verify if mongoexport is available after installation
+        Write-Host "Checking if mongoexport is available..."
+        $mongoexportPath = "C:\mongodb-tools\bin\mongoexport"
+        if (Test-Path $mongoexportPath) {
+            Write-Host "mongoexport found at $mongoexportPath"
+        } else {
+            Write-Host "mongoexport not found at $mongoexportPath"
+        }
 
     # Step 3: Set MongoDB URIs and Run PowerShell Script
     - name: Run MongoDB Export and Import Script
@@ -34,18 +39,18 @@ jobs:
         PREPROD_URI: ${{ secrets.PREPROD_URI }}  # MongoDB preprod URI from secrets
         PROD_URI: ${{ secrets.PROD_URI }}        # MongoDB prod URI from secrets
       run: |
-        # Explicitly set PATH for PowerShell
+        # Ensure mongoexport is in the PATH
         $env:PATH = "C:\mongodb-tools\bin;" + $env:PATH
-
-        # Print out the PATH for debugging purposes
+        
+        # Print out the PATH for debugging
         Write-Host "Current PATH: $env:PATH"
-
-        # Ensure mongoexport is available
-        $mongoexportPath = "C:\mongodb-tools\bin\mongoexport"
-        if (Test-Path $mongoexportPath) {
-            Write-Host "mongoexport found at $mongoexportPath"
+        
+        # Ensure mongoexport is found in the PATH
+        if (-not (Get-Command mongoexport -ErrorAction SilentlyContinue)) {
+          Write-Host "mongoexport not found in PATH"
+          exit 1
         } else {
-            Write-Host "mongoexport not found at $mongoexportPath"
+          Write-Host "mongoexport found in PATH"
         }
 
         # Run the PowerShell script (ensure mongo.ps1 is in the root of your repository)
