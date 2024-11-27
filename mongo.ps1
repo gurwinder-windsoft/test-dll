@@ -3,9 +3,13 @@ param (
     [string]$exportPath
 )
 
-# Use environment variables for MongoDB URIs
-$preprodUri = $env:PREPRODURI  # URI for preprod database
-$prodUri = $env:PRODURI        # URI for prod database
+# Hardcoded MongoDB URIs for testing purposes
+$preprodUri = "mongodb://admin:adminYBXdGH@68.219.243.214:27018/?authSource=admin"  # Preprod URI
+$prodUri = "mongodb://admin:adminYBXdGH123@68.219.243.214:27017/?authSource=admin"     # Prod URI
+
+# Debugging: Ensure the URIs are set correctly
+Write-Host "Using PREPROD_URI: $preprodUri"
+Write-Host "Using PROD_URI: $prodUri"
 
 # Function to export data from preprod
 function Export-PreprodData {
@@ -14,7 +18,9 @@ function Export-PreprodData {
     )
 
     try {
+        Write-Host "Export path: $exportPath"
         $mongoExportCommand = "& 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri=`"$preprodUri`" --db=SyncNotifyHubService --collection=$collectionName --out=`"$exportPath`" --jsonArray --authenticationDatabase=admin"
+        
         Write-Host "Exporting $collectionName from preprod..."
         Write-Host "Running export command: $mongoExportCommand"
         Invoke-Expression $mongoExportCommand
