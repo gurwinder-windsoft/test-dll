@@ -21,18 +21,10 @@ jobs:
         Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.5.1.zip" -OutFile "mongodb-tools.zip"
         Expand-Archive -Path "mongodb-tools.zip" -DestinationPath "C:\mongodb-tools"
         
-        # Check if the tools are extracted correctly
-        Write-Host "Verifying mongoexport installation"
-        Get-Command mongoexport || Write-Host "mongoexport not found in path"
-        
-        # Add MongoDB tools to the PATH environment variable
-        [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\mongodb-tools\bin", "Machine")
+        # Add MongoDB tools to the PATH environment variable and persist across steps
+        echo "PATH=C:\mongodb-tools\bin:$PATH" >> $GITHUB_ENV
 
-        # Verify if mongoexport is now accessible
-        Write-Host "Verifying mongoexport after PATH update"
-        Get-Command mongoexport || Write-Host "mongoexport still not found"
-
-    # Step 3: Set up MongoDB credentials and export/import the data
+    # Step 3: Set up MongoDB credentials and run the PowerShell script
     - name: Run MongoDB Export and Import Script
       env:
         PREPRODURI: ${{ secrets.PREPRODURI }}  # MongoDB preprod URI from secrets
