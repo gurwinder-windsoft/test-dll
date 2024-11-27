@@ -21,23 +21,12 @@ jobs:
         Expand-Archive -Path "mongodb-tools.zip" -DestinationPath "C:\mongodb-tools"
         [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\mongodb-tools\bin", "Machine")
 
-    # Step 3: Set up MongoDB credentials
-    - name: Set up MongoDB credentials
+    # Step 3: Set up MongoDB credentials and export/import the data
+    - name: Run MongoDB Export and Import Script
       env:
-        PREPROD_URI: ${{ secrets.PREPROD_URI }}
-        PROD_URI: ${{ secrets.PROD_URI }}
-        GITHUB_WORKSPACE: $GITHUB_WORKSPACE
+        PREPRODURI: ${{ secrets.PREPRODURI }}  # MongoDB preprod URI from secrets
+        PRODURI: ${{ secrets.PRODURI }}        # MongoDB prod URI from secrets
       run: |
-        # Run the PowerShell script
-        pwsh -Command "& .\mongo.ps1"
-
-    # Step 4: Export and Import data
-    - name: Export and Import data
-      env:
-        PREPROD_URI: ${{ secrets.PREPROD_URI }}
-        PROD_URI: ${{ secrets.PROD_URI }}
-        GITHUB_WORKSPACE: $GITHUB_WORKSPACE
-      run: |
-        # Run the PowerShell script, passing the export path
-        pwsh -Command "& .\mongo.ps1 -collectionName 'Client' -exportPath \"$env:GITHUB_WORKSPACE\Client.json\""
-        pwsh -Command "& .\mongo.ps1 -collectionName 'User' -exportPath \"$env:GITHUB_WORKSPACE\User.json\""
+        # Ensure mongo.ps1 is in the root directory of the repository
+        $exportPath = "$env:GITHUB_WORKSPACE\$($env:COLLECTION_NAME).json"
+        pwsh -Command "& .\mongo.ps1 -exportPath '$exportPath'"
