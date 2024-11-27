@@ -4,8 +4,8 @@ param (
 )
 
 # Use environment variables for MongoDB URIs
-$preprodUri = $env:PREPROD_URI  # URI for preprod database
-$prodUri = $env:PROD_URI        # URI for prod database
+$preprodUri = $env:PREPRODURI  # URI for preprod database
+$prodUri = $env:PRODURI        # URI for prod database
 
 # Function to export data from preprod
 function Export-PreprodData {
