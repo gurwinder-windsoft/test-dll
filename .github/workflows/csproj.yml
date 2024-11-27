@@ -20,18 +20,21 @@ jobs:
         # Download MongoDB tools and unzip them
         Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.10.0.zip" -OutFile "mongodb-tools.zip"
         Expand-Archive -Path "mongodb-tools.zip" -DestinationPath "C:\mongodb-tools"
-        
+
+        # Debugging step to list contents of the extracted folder
+        Write-Host "Listing files in the extracted MongoDB tools folder:"
+        Get-ChildItem -Path "C:\mongodb-tools\bin" -Recurse
+
         # Add MongoDB tools to PATH and persist across steps
         echo "C:\mongodb-tools\bin" >> $GITHUB_ENV
 
-        # Verify mongoexport installation and print path
-        Write-Host "Checking if mongoexport is available..."
+        # Check if mongoexport exists after extraction
         $mongoexportPath = "C:\mongodb-tools\bin\mongoexport"
         if (Test-Path $mongoexportPath) {
-            Write-Host "mongoexport found at $mongoexportPath"
+          Write-Host "mongoexport found at $mongoexportPath"
         } else {
-            Write-Host "mongoexport not found at $mongoexportPath"
-            exit 1
+          Write-Host "mongoexport not found at $mongoexportPath"
+          exit 1
         }
 
     # Step 3: Set MongoDB URIs and Run PowerShell Script
