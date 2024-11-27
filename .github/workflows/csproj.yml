@@ -34,6 +34,10 @@ jobs:
         PREPROD_URI: ${{ secrets.PREPROD_URI }}  # MongoDB preprod URI from secrets
         PROD_URI: ${{ secrets.PROD_URI }}        # MongoDB prod URI from secrets
       run: |
+        # Debug the MongoDB URIs
+        Write-Host "PREPROD_URI: $env:PREPROD_URI"
+        Write-Host "PROD_URI: $env:PROD_URI"
+
         # Ensure the MongoDB tools path is correctly added to the PowerShell session
         $env:PATH = "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin;" + $env:PATH
         Write-Host "Current PATH: $env:PATH"
