@@ -53,5 +53,15 @@ jobs:
         # Explicitly run mongoexport with full path using & operator
         Write-Host "Using mongoexport located at: C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe"
         
-        # Run the PowerShell script (ensure mongo.ps1 is in the root of your repository)
-        pwsh -Command "& .\mongo.ps1"
+        # Set export paths
+        $exportPath = "C:\exported_data\Client.json"
+        
+        # Step 4: Export Client data from preprod to a file
+        Write-Host "Exporting Client data from preprod"
+        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri=$env:PREPRODURI --db=SyncNotifyHubService --collection=Client --out=$exportPath --jsonArray --authenticationDatabase=admin
+        Write-Host "Exported Client data to $exportPath"
+
+        # Step 5: Import Client data into prod
+        Write-Host "Importing Client data into prod"
+        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$env:PRODURI --db=SyncNotifyHubService --collection=Client --file=$exportPath --jsonArray --authenticationDatabase=admin
+        Write-Host "Imported Client data into prod"
