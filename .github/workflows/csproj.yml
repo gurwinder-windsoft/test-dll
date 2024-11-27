@@ -1,67 +1,42 @@
-name: MongoDB Export and Import
+name: MongoDB Export/Import
 
 on:
-  push:
-    branches:
-      - test  # Trigger the workflow on push to the 'test' branch
+  workflow_dispatch:
 
 jobs:
   mongo-export-import:
-    runs-on: windows-latest  # Use Windows runner for PowerShell
-
+    runs-on: windows-latest
     steps:
-    # Step 1: Checkout Repository
-    - name: Checkout Repository
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    # Step 2: Download and install MongoDB Tools
-    - name: Install MongoDB Tools
-      run: |
-        # Download MongoDB tools and unzip them
-        Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.10.0.zip" -OutFile "mongodb-tools.zip"
-        Expand-Archive -Path "mongodb-tools.zip" -DestinationPath "C:\mongodb-tools"
+      - name: Run MongoDB Export and Import Script
+        env:
+          PREPRODURI: ${{ secrets.PREPRODURI }}  # MongoDB preprod URI from secrets
+          PRODURI: ${{ secrets.PRODURI }}        # MongoDB prod URI from secrets
+        run: |
+          # Debug the MongoDB URIs
+          Write-Host "PREPRODURI: $env:PREPRODURI"
+          Write-Host "PRODURI: $env:PRODURI"
 
-        # Debugging step to list contents of the extracted folder
-        Write-Host "Listing files in the extracted MongoDB tools folder:"
-        Get-ChildItem -Path "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin" -Recurse
+          # Ensure the MongoDB tools path is correctly added to the PowerShell session
+          $env:PATH = "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin;" + $env:PATH
+          Write-Host "Current PATH: $env:PATH"
 
-        # Add MongoDB tools to PATH and persist across steps
-        echo "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin" >> $GITHUB_ENV
+          # Define collections to export and import
+          $collections = @("Client", "User")
 
-    # Step 3: Set MongoDB URIs and Run PowerShell Script
-    - name: Run MongoDB Export and Import Script
-      env:
-        PREPRODURI: ${{ secrets.PREPRODURI }}  # MongoDB preprod URI from secrets
-        PRODURI: ${{ secrets.PRODURI }}        # MongoDB prod URI from secrets
-      run: |
-        # Debug the MongoDB URIs
-        Write-Host "PREPRODURI: $env:PREPRODURI"
-        Write-Host "PRODURI: $env:PRODURI"
+          foreach ($collectionName in $collections) {
+            # Set export paths
+            $exportPath = "C:\exported_data\$collectionName.json"
 
-        # Ensure the MongoDB tools path is correctly added to the PowerShell session
-        $env:PATH = "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin;" + $env:PATH
-        Write-Host "Current PATH: $env:PATH"
+            # Step 4: Export collection data from preprod to a file
+            Write-Host "Exporting $collectionName data from preprod"
+            & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri=$env:PREPRODURI --db=SyncNotifyHubService --collection=$collectionName --out=$exportPath --jsonArray
+            Write-Host "Exported $collectionName data to $exportPath"
 
-        # Verify if mongoexport is available in PATH
-        if (-not (Get-Command mongoexport -ErrorAction SilentlyContinue)) {
-          Write-Host "mongoexport not found in PATH"
-          exit 1
-        } else {
-          Write-Host "mongoexport found in PATH"
-        }
-
-        # Explicitly run mongoexport with full path using & operator
-        Write-Host "Using mongoexport located at: C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe"
-        
-        # Set export paths
-        $exportPath = "C:\exported_data\Client.json"
-        
-        # Step 4: Export Client data from preprod to a file
-        Write-Host "Exporting Client data from preprod"
-        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri=$env:PREPRODURI --db=SyncNotifyHubService --collection=Client --out=$exportPath --jsonArray
-        Write-Host "Exported Client data to $exportPath"
-
-        # Step 5: Import Client data into prod
-        Write-Host "Importing Client data into prod"
-        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$env:PRODURI --db=SyncNotifyHubService --collection=Client --file=$exportPath --jsonArray --upsert --verbose 
-        Write-Host "Imported Client data into prod"
+            # Step 5: Import collection data into prod
+            Write-Host "Importing $collectionName data into prod"
+            & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$env:PRODURI --db=SyncNotifyHubService --collection=$collectionName --file=$exportPath --jsonArray --upsert --verbose 
+            Write-Host "Imported $collectionName data into prod"
+          }
