@@ -1,7 +1,10 @@
 name: MongoDB Export/Import
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - test  # Trigger the workflow on push to the 'test' branch
+
 
 jobs:
   mongo-export-import:
