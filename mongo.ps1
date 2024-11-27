@@ -53,7 +53,7 @@ function Import-ProdData {
 }
 
 # Main logic for exporting from preprod and importing to prod
-$collections = @("Client", "User")  # List of collections to export/import
+$collections = @("Client", "User")  
 
 foreach ($collectionName in $collections) {
     # Step 1: Export data from preprod
