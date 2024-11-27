@@ -17,19 +17,19 @@ jobs:
     # Step 2: Download and install MongoDB Tools
     - name: Install MongoDB Tools
       run: |
-        # Download and extract MongoDB tools
         Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.5.1.zip" -OutFile "mongodb-tools.zip"
         Expand-Archive -Path "mongodb-tools.zip" -DestinationPath "C:\mongodb-tools"
-        
-        # Add MongoDB tools to the PATH environment variable and persist across steps
-        echo "PATH=C:\mongodb-tools\bin:$PATH" >> $GITHUB_ENV
 
-    # Step 3: Set up MongoDB credentials and run the PowerShell script
-    - name: Run MongoDB Export and Import Script
+    # Step 3: Set up MongoDB credentials
+    - name: Set up MongoDB credentials
       env:
-        PREPRODURI: ${{ secrets.PREPRODURI }}  # MongoDB preprod URI from secrets
-        PRODURI: ${{ secrets.PRODURI }}        # MongoDB prod URI from secrets
+        PREPROD_URI: ${{ secrets.PREPROD_URI }}
+        PROD_URI: ${{ secrets.PROD_URI }}
       run: |
-        # Ensure mongo.ps1 is in the root directory of the repository
-        $exportPath = "$env:GITHUB_WORKSPACE\$($env:COLLECTION_NAME).json"
-        pwsh -Command "& .\mongo.ps1 -exportPath '$exportPath'"
+        # No command needed here
+
+    # Step 4: Run the PowerShell script
+    - name: Run PowerShell script
+      shell: pwsh
+      run: |
+        .\mongo.ps1
