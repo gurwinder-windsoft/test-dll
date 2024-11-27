@@ -14,13 +14,14 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
       
+    # Step 2: Download and install MongoDB Tools
     - name: Install MongoDB Tools
       run: |
         Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.5.1.zip" -OutFile "mongodb-tools.zip"
         Expand-Archive -Path "mongodb-tools.zip" -DestinationPath "C:\mongodb-tools"
-        $env:PATH += ";C:\mongodb-tools\bin"
-    
-    # Step 2: Set up MongoDB credentials
+        [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\mongodb-tools\bin", "Machine")
+
+    # Step 3: Set up MongoDB credentials
     - name: Set up MongoDB credentials
       env:
         PREPRODURI: ${{ secrets.PREPRODURI }}
