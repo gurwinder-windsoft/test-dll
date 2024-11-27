@@ -38,7 +38,7 @@ function Import-ProdData {
     try {
         if (Test-Path $exportFile) {
             # Correcting the MongoDB URI for import and removing invalid "admin" database in the URI
-            $importCommand = "& 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri='$env:PRODURI' --db=SyncNotifyHubService --collection=$collectionName --file=$exportFile --jsonArray --upsert --authenticationDatabase=admin"
+            $importCommand = "& 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri='$env:PRODURI' --db=SyncNotifyHubService --collection=$collectionName --file=$exportFile --jsonArray --upsert --verbose"
 
             Write-Host "Importing data into prod from $exportFile..."
             Write-Host "Running import command: $importCommand"
