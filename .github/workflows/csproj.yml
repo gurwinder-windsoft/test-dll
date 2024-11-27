@@ -63,5 +63,5 @@ jobs:
 
         # Step 5: Import Client data into prod
         Write-Host "Importing Client data into prod"
-        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$env:PRODURI --db=SyncNotifyHubService --collection=Client --file=$exportPath --jsonArray --upsert
+        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$env:PRODURI --db=SyncNotifyHubService --collection=Client --file=$exportPath --jsonArray --upsert --authenticationDatabase=admin
         Write-Host "Imported Client data into prod"
