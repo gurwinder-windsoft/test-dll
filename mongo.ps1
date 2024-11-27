@@ -1,67 +1,24 @@
-param (
-    [string]$collectionName,
-    [string]$exportPath
-)
+# Define MongoDB URIs
+$preprodURI = "mongodb://admin:adminYBXdGH@68.219.243.214:27018/?authSource=admin"
+$prodURI = "mongodb://admin:adminYBXdGH123@68.219.243.214:27017/?authSource=admin"
 
-# Debugging: Print the collection name and export path
-Write-Host "Collection: $collectionName"
-Write-Host "Export path: $exportPath"
+# Define collections to export and import
+$collections = @("Client", "User")
 
-function Export-PreprodData {
-    param (
-        [string]$collectionName
-    )
-
-    try {
-        # Remove --authenticationDatabase flag and rely on the URI for authSource
-        $mongoExportCommand = "& 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri='$env:PREPRODURI' --db=SyncNotifyHubService --collection=$collectionName --out=`"$exportPath`" --jsonArray"
-        
-        Write-Host "Exporting $collectionName from preprod..."
-        Write-Host "Running export command: $mongoExportCommand"
-        Invoke-Expression $mongoExportCommand
-        Write-Host "Exported $collectionName successfully to $exportPath"
-        return $exportPath
-    } catch {
-        Write-Host "Error exporting data from preprod: $($_.Exception.Message)"
-        Write-Host "StackTrace: $($_.Exception.StackTrace)"
-        return $null
-    }
-}
-
-# Function to import data into prod
-function Import-ProdData {
-    param (
-        [string]$collectionName,
-        [string]$exportFile
-    )
-
-    try {
-        if (Test-Path $exportFile) {
-            # Correcting the MongoDB URI for import and removing invalid "admin" database in the URI
-            $importCommand = "& 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri='$env:PRODURI' --db=SyncNotifyHubService --collection=$collectionName --file=$exportFile --jsonArray --upsert --verbose"
-
-            Write-Host "Importing data into prod from $exportFile..."
-            Write-Host "Running import command: $importCommand"
-            Invoke-Expression $importCommand
-            Write-Host "Data imported into prod successfully."
-        } else {
-            Write-Host "Error: The file $exportFile was not found."
-        }
-    } catch {
-        Write-Host "Error importing data into prod: $($_.Exception.Message)"
-    }
-}
-
-# Main logic for exporting from preprod and importing to prod
-$collections = @("Client", "User")  
+# Define export paths
+$exportPath = "C:\exported_data\"
 
 foreach ($collectionName in $collections) {
-    # Step 1: Export data from preprod
-    $exportFile = Export-PreprodData -collectionName $collectionName -exportPath "$env:GITHUB_WORKSPACE\$collectionName.json"
-    if ($exportFile) {
-        # Step 2: Import data into prod
-        Import-ProdData -collectionName $collectionName -exportFile $exportFile
-    } else {
-        Write-Host "Data export for $collectionName failed. Cannot proceed with import."
-    }
+  # Set export path for current collection
+  $collectionExportPath = $exportPath + $collectionName + ".json"
+
+  # Step 4: Export collection data from preprod to a file
+  Write-Host "Exporting $collectionName data from preprod"
+  & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri=$preprodURI --db=SyncNotifyHubService --collection=$collectionName --out=$collectionExportPath --jsonArray
+  Write-Host "Exported $collectionName data to $collectionExportPath"
+
+  # Step 5: Import collection data into prod
+  Write-Host "Importing $collectionName data into prod"
+  & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$prodURI --db=SyncNotifyHubService --collection=$collectionName --file=$collectionExportPath --jsonArray --upsert --verbose 
+  Write-Host "Imported $collectionName data into prod"
 }
