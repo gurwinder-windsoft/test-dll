@@ -16,10 +16,19 @@ jobs:
 
     # Step 2: Download and install MongoDB Tools
     # Step 2: Download and install MongoDB Tools
+    # Step 2: Download and install MongoDB Tools
     - name: Install MongoDB Tools
       run: |
         Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.5.1.zip" -OutFile "mongodb-tools.zip"
         Expand-Archive -Path "mongodb-tools.zip" -DestinationPath "C:\mongodb-tools"
+
+     # Step 3: Verify the existence of mongoexport.exe
+    - name: Verify mongoexport.exe
+      run: |
+         if (!(Test-Path -Path "C:\mongodb-tools\bin\mongoexport.exe")) {
+           Write-Host "mongoexport.exe not found"
+           exit 1
+         }
 
     # Step 3: Copy mongo.ps1 to root directory
     - name: Copy mongo.ps1
