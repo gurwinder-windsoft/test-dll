@@ -10,7 +10,6 @@ jobs:
     runs-on: windows-latest  # Use Windows runner for PowerShell
 
     steps:
-    # Step 1: Checkout Repository
     - name: Checkout Repository
       uses: actions/checkout@v2
 
