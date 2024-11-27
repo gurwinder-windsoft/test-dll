@@ -10,13 +10,8 @@ jobs:
     runs-on: windows-latest  # Use Windows runner for PowerShell
 
     steps:
-    # Step 1: Check out the repository
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
-    # Step 2: Set up PowerShell
-    - name: Set up PowerShell
-      uses: actions/setup-powershell@v2
+    - name: Checkout Repository
+      uses: actions/checkout@v2
 
     # Step 3: Install MongoDB Tools
     - name: Install MongoDB Tools
@@ -31,4 +26,4 @@ jobs:
       run: |
         # Run the PowerShell script, passing the export path
         pwsh -Command |
-          . ${{ github.workspace }}\scripts\export-import.ps1 -exportPath "$env:GITHUB_WORKSPACE\$collectionName.json"
+          . ${{ github.workspace }}\scripts\mongo.ps1 -exportPath "$env:GITHUB_WORKSPACE\$collectionName.json"
