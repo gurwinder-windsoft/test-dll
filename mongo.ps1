@@ -13,7 +13,7 @@ function Export-PreprodData {
     )
 
     try {
-        # Hardcoding the preprod URI directly in the mongoexport command
+        # Remove --authenticationDatabase flag and rely on the URI for authSource
         $mongoExportCommand = "& 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri='mongodb://admin:adminYBXdGH@68.219.243.214:27018/?authSource=admin' --db=SyncNotifyHubService --collection=$collectionName --out=`"$exportPath`" --jsonArray"
         
         Write-Host "Exporting $collectionName from preprod..."
@@ -37,7 +37,7 @@ function Import-ProdData {
 
     try {
         if (Test-Path $exportFile) {
-            # Hardcoding the prod URI directly in the mongoimport command
+            # Remove --authenticationDatabase flag and rely on the URI for authSource
             $importCommand = "& 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri='mongodb://admin:adminYBXdGH123@68.219.243.214:27017/?authSource=admin' --db=SyncNotifyHubService --collection=$collectionName --file=$exportFile --jsonArray --upsert"
             Write-Host "Importing data into prod from $exportFile..."
             Write-Host "Running import command: $importCommand"
