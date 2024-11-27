@@ -38,7 +38,7 @@ function Import-ProdData {
     try {
         if (Test-Path $exportFile) {
             # Hardcoding the prod URI directly in the mongoimport command
-            $importCommand = "mongoimport --uri='mongodb://admin:adminYBXdGH123@68.219.243.214:27017/?authSource=admin' --db=SyncNotifyHubService --collection=$collectionName --file=$exportFile --jsonArray --authenticationDatabase=admin --upsert"
+            $importCommand = "& 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri='mongodb://admin:adminYBXdGH123@68.219.243.214:27017/?authSource=admin' --db=SyncNotifyHubService --collection=$collectionName --file=$exportFile --jsonArray --authenticationDatabase=admin --upsert"
             Write-Host "Importing data into prod from $exportFile..."
             Write-Host "Running import command: $importCommand"
             Invoke-Expression $importCommand
