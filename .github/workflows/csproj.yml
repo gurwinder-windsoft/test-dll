@@ -14,9 +14,10 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
       
-    - name: Install MongoDB Tools
+    # Step 2: Install MongoDB Tools via Winget
+    - name: Install MongoDB Tools via Winget
       run: |
-        choco install mongodb-tools  
+        winget install --id MongoDB.MongoDBTools -e --source winget
 
     # Step 2: Set up MongoDB credentials
     - name: Set up MongoDB credentials
