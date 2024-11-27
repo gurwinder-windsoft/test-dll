@@ -28,30 +28,8 @@ jobs:
         # Add MongoDB tools to PATH and persist across steps
         echo "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin" >> $GITHUB_ENV
 
-    # Step 3: Set MongoDB URIs and Run PowerShell Script
-    - name: Run MongoDB Export and Import Script
-      env:
-        PREPRODURI: "mongodb://admin:adminYBXdGH@68.219.243.214:27018/?authSource=admin"
-        PRODURI: "mongodb://admin:adminYBXdGH123@68.219.243.214:27017/?authSource=admin"
+    # Step 3: Run PowerShell Script
+    - name: Run PowerShell Script
       run: |
-        # Debug the MongoDB URIs
-        Write-Host "PREPRODURI: $env:PREPRODURI"
-        Write-Host "PRODURI: $env:PRODURI"
-
-        # Define collections to export and import
-        $collections = @("Client", "User")
-
-        foreach ($collectionName in $collections) {
-          # Set export paths
-          $exportPath = "C:\exported_data\$collectionName.json"
-
-          # Step 4: Export collection data from preprod to a file
-          Write-Host "Exporting $collectionName data from preprod"
-          & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri=$env:PREPRODURI --db=SyncNotifyHubService --collection=$collectionName --out=$exportPath --jsonArray
-          Write-Host "Exported $collectionName data to $exportPath"
-
-          # Step 5: Import collection data into prod
-          Write-Host "Importing $collectionName data into prod"
-          & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$env:PRODURI --db=SyncNotifyHubService --collection=$collectionName --file=$exportPath --jsonArray --upsert --verbose 
-          Write-Host "Imported $collectionName data into prod"
-        }
+        # Call the PowerShell script
+        .\mongo.ps1
