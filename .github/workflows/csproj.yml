@@ -23,13 +23,13 @@ jobs:
 
         # Debugging step to list contents of the extracted folder
         Write-Host "Listing files in the extracted MongoDB tools folder:"
-        Get-ChildItem -Path "C:\mongodb-tools\bin" -Recurse
+        Get-ChildItem -Path "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin" -Recurse
 
         # Add MongoDB tools to PATH and persist across steps
-        echo "C:\mongodb-tools\bin" >> $GITHUB_ENV
+        echo "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin" >> $GITHUB_ENV
 
         # Check if mongoexport exists after extraction
-        $mongoexportPath = "C:\mongodb-tools\bin\mongoexport"
+        $mongoexportPath = "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport"
         if (Test-Path $mongoexportPath) {
           Write-Host "mongoexport found at $mongoexportPath"
         } else {
@@ -44,7 +44,7 @@ jobs:
         PROD_URI: ${{ secrets.PROD_URI }}        # MongoDB prod URI from secrets
       run: |
         # Set the PATH to include MongoDB tools location
-        $env:PATH = "C:\mongodb-tools\bin;" + $env:PATH
+        $env:PATH = "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin;" + $env:PATH
 
         # Verify mongoexport is available after modifying PATH
         Write-Host "Current PATH: $env:PATH"
