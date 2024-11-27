@@ -31,5 +31,6 @@ jobs:
     # Step 4: Run the PowerShell script
     - name: Run PowerShell script
       shell: pwsh
+      working-directory: C:\mongodb-tools\bin
       run: |
-        .\mongo.ps1
+        ..\mongo.ps1
