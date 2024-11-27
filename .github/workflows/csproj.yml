@@ -58,10 +58,10 @@ jobs:
         
         # Step 4: Export Client data from preprod to a file
         Write-Host "Exporting Client data from preprod"
-        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri=$env:PREPRODURI --db=SyncNotifyHubService --collection=Client --out=$exportPath --jsonArray --authenticationDatabase=admin
+        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoexport.exe' --uri=$env:PREPRODURI --db=SyncNotifyHubService --collection=Client --out=$exportPath --jsonArray
         Write-Host "Exported Client data to $exportPath"
 
         # Step 5: Import Client data into prod
         Write-Host "Importing Client data into prod"
-        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$env:PRODURI --db=SyncNotifyHubService --collection=Client --file=$exportPath --jsonArray --authenticationDatabase=admin
+        & 'C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe' --uri=$env:PRODURI --db=SyncNotifyHubService --collection=Client --file=$exportPath --jsonArray --upsert
         Write-Host "Imported Client data into prod"
