@@ -52,6 +52,6 @@ jobs:
 
           # Step 5: Import collection data into prod
           Write-Host "Importing $collectionName data into prod"
-          C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe --uri=$env:PRODURI --db=SyncNotifyHubService --collection=$collectionName --file=$exportPath --jsonArray --upsert --verbose 
+          C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin\mongoimport.exe --uri=${PRODURI/\?authSource=admin/} --db=SyncNotifyHubService --collection=$collectionName --file=$exportPath --jsonArray --upsert --verbose 
           Write-Host "Imported $collectionName data into prod"
         }
