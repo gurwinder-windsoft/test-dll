@@ -27,7 +27,9 @@ jobs:
         # Add MongoDB tools to PATH and persist across steps
         echo "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin" >> $GITHUB_ENV  
     - name: github secrets
-      env: 
+      run: echo "Defining GitHub secrets"
+      shell: pwsh
+      env:
         PREPROD_USERNAME: ${{secrets.PREPROD_USERNAME}}
         PREPROD_PASSWORD: ${{secrets.PREPROD_PASSWORD}}
 
