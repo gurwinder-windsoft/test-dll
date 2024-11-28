@@ -1,5 +1,5 @@
 # Define MongoDB URIs
-$preprodURI = "mongodb://$(Get-ChildItem -Path Env:PREPROD_USERNAME):$(Get-ChildItem -Path Env:PREPROD_PASSWORD)@68.219.243.214:27018/?authSource=admin"
+$preprodURI = "mongodb://${env:PREPROD_USERNAME}:${env:PREPROD_PASSWORD}@68.219.243.214:27018/?authSource=admin"
 $prodURI = "mongodb://admin:adminYBXdGH123@68.219.243.214:27017/?authSource=admin"
 
 # Define collections to export and import
