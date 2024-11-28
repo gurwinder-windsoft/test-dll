@@ -7,7 +7,10 @@ on:
 
 jobs:
   mongo-export-import:
-    runs-on: windows-latest  
+    runs-on: windows-latest
+    env:
+      PREPROD_USERNAME: ${{secrets.PREPROD_USERNAME}}
+      PREPROD_PASSWORD: ${{secrets.PREPROD_PASSWORD}}
 
     steps:
     - name: Checkout Repository
@@ -26,12 +29,6 @@ jobs:
 
         # Add MongoDB tools to PATH and persist across steps
         echo "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin" >> $GITHUB_ENV  
-    - name: github secrets
-      run: echo "Defining GitHub secrets"
-      shell: pwsh
-      env:
-        PREPROD_USERNAME: ${{secrets.PREPROD_USERNAME}}
-        PREPROD_PASSWORD: ${{secrets.PREPROD_PASSWORD}}
 
     # Step 3: Run PowerShell 
     - name: Run PowerShell Script
@@ -39,4 +36,3 @@ jobs:
       run: |
         # Call the PowerShell script
         .\mongo.ps1
-      
