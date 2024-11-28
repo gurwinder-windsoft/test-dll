@@ -9,9 +9,9 @@ jobs:
   mongo-export-import:
     runs-on: windows-latest
     env:
-      PREPRODURI: ${{secrets.PREPRODURI}}
-      #PREPROD_USERNAME: ${{secrets.PREPROD_USERNAME}}
-      #PREPROD_PASSWORD: ${{secrets.PREPROD_PASSWORD}}
+      DB_USERNAME: ${{secrets.DB_USERNAME}}
+      PREPROD_PASSWORD: ${{secrets.PREPROD_PASSWORD}}
+      PROD_PASSWORD: ${{secrets.PROD_PASSWORD}}
 
     steps:
     - name: Checkout Repository
