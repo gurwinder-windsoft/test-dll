@@ -31,7 +31,7 @@ jobs:
         PREPROD_USERNAME: ${{secrets.PREPROD_USERNAME}}
         PREPROD_PASSWORD: ${{secrets.PREPROD_PASSWORD}}
 
-    # Step 3: Run PowerShell Script
+    # Step 3: Run PowerShell 
     - name: Run PowerShell Script
       run: |
         # Call the PowerShell script
