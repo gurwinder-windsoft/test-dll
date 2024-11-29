@@ -35,5 +35,5 @@ jobs:
     - name: Run PowerShell Script
       shell: pwsh
       run: |
-        # Call 
+        # Call script
         .\mongo.ps1
