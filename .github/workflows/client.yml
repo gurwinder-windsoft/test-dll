@@ -3,7 +3,7 @@ name: FTP/SFTP Upload or Download
 on:
   push:
     branches:
-      - main
+      - test
 
 jobs:
   ftp_job:
