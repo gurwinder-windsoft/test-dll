@@ -19,7 +19,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up Azure CLI
-      uses: azure/azure-cli-action@v1
+      uses: azure/cli-action@v1
       with:
         azure-subscription: "b120f947-2f70-40e2-9da1-63ab71a9a"  
       
