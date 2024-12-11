@@ -20,8 +20,9 @@ jobs:
     - name: Get GitHub Runner's IP
       id: runner_ip
       run: | 
-        runner_ip=$(curl -s ifconfig.me)
-        echo "runner_ip=$runner_ip" >> $GITHUB_ENV
+        $runner_ip = Invoke-RestMethod -Uri "http://ifconfig.me"
+        Write-Host "Runner IP: $runner_ip"
+        echo "runner_ip=$runner_ip" >> $env:GITHUB_ENV 
  
     # Step 2: Download and install MongoDB Tools
     - name: Install MongoDB Tools
