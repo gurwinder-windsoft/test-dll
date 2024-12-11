@@ -1,6 +1,6 @@
 # Define MongoDB URIs
 $preprodURI = "mongodb://${env:DB_USERNAME}:${env:PREPROD_PASSWORD}@68.219.243.214:27018/?authSource=admin"
-$prodURI = "mongodb://adminintuser:adminYBXdPS274@68.219.243.214:27017/?authSource=admin"
+$prodURI = "mongodb://adminintuser:adminYBXdPS274@68.219.243.214:27022/?authSource=admin"
 
 # Define collections to export and import
 $collections = @("Client", "User")
