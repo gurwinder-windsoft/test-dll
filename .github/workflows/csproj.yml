@@ -16,7 +16,11 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
-
+      
+    - name: Get GitHub Runner's IP
+      id: runner_ip
+      run: | 
+ 
     # Step 2: Download and install MongoDB Tools
     - name: Install MongoDB Tools
       run: |
@@ -36,4 +40,4 @@ jobs:
       shell: pwsh
       run: |
         # Call script
-        .\mongo.ps1
+      #.\mongo.ps1
