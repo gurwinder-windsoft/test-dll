@@ -12,10 +12,16 @@ jobs:
       DB_USERNAME: ${{secrets.DB_USERNAME}}
       PREPROD_PASSWORD: ${{secrets.PREPROD_PASSWORD}}
       PROD_PASSWORD: ${{secrets.PROD_PASSWORD}}
+      AZURE_VM_PUBLIC_IP: ${{secrets.AZURE_VM_PUBLIC_IP}}
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
+
+    - name: Set up Azure CLI
+      uses: azure/setup-azurecli@v1
+      with:
+        azure-subscription: "b120f947-2f70-40e2-9da1-63ab71a9a"  
       
     - name: Get GitHub Runner's IP
       id: runner_ip
@@ -23,6 +29,18 @@ jobs:
         $runner_ip = Invoke-RestMethod -Uri "http://ifconfig.me"
         Write-Host "Runner IP: $runner_ip"
         echo "runner_ip=$runner_ip" >> $env:GITHUB_ENV 
+    - name: Add GitHub Runner IP to NSG
+      run: |
+        az network nsg rule create \
+          --resource-group "WindSoft" \
+          --nsg-name "ProdMongoDbNSG" \
+          --name AllowGitHubRunner \
+          --protocol tcp \
+          --priority 1000 \
+          --source-address-prefixes ${{env.runner_ip}} \
+          --destination-port-ranges 27017 27018 \
+          --access Allow \
+          --direction Inbound  
  
     # Step 2: Download and install MongoDB Tools
     - name: Install MongoDB Tools
