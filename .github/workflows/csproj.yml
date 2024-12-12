@@ -32,7 +32,7 @@ jobs:
 
     - name: Add GitHub Runner IP to Both NSGs
       run: |
-        $nsgNames = @("SubnetMongoDbNSG", "NicMongoDbNSG")  # Array of NSG names to target
+        $nsgNames = @("ProdNSG", "ProdMongoDbNSG")  # Array of NSG names to target
         foreach ($nsgName in $nsgNames) {
           # Add rule to each NSG
           az network nsg rule create `
@@ -63,7 +63,7 @@ jobs:
 
     - name: Remove GitHub Runner IP from Both NSGs
       run: |
-        $nsgNames = @("SubnetMongoDbNSG", "NicMongoDbNSG")  # Array of NSG names to target
+        $nsgNames = @("ProdNSG", "ProdMongoDbNSG")  # Array of NSG names to target
         foreach ($nsgName in $nsgNames) {
           # Remove rule from each NSG
           az network nsg rule delete `
