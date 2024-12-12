@@ -21,8 +21,8 @@ jobs:
     - name: Set up Azure CLI
       uses: azure/login@v1
       with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }} 
         azure-subscription: "b120f947-2f70-40e2-9da1-63ab45e71a9a"  
-        client-secret: ${{ secrets.AZURE_CREDENTIALS }}  # Hardcoded Client Secret
 
     - name: Get GitHub Runner's IP
       id: runner_ip
