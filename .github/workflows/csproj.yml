@@ -3,7 +3,7 @@ name: MongoDB Export and Import
 on:
   push:
     branches:
-      - test  # Trigger the workflow on push to  'test' branch
+      - test  # Trigger the workflow on push to 'test' branch
 
 jobs:
   mongo-export-import:
@@ -25,7 +25,7 @@ jobs:
 
     - name: Get GitHub Runner's IP
       id: runner_ip
-      run: | 
+      run: |
         $runner_ip = Invoke-RestMethod -Uri "http://ifconfig.me"
         Write-Host "Runner IP: $runner_ip"
         echo "runner_ip=$runner_ip" >> $env:GITHUB_ENV 
@@ -34,19 +34,18 @@ jobs:
       run: |
         $nsgNames = @("SubnetMongoDbNSG", "NicMongoDbNSG")  # Array of NSG names to target
         foreach ($nsgName in $nsgNames) {
-            # Add rule to each NSG
-            az network nsg rule create `
-              --resource-group "WindSoft" `
-              --nsg-name $nsgName `
-              --name AllowGitHubRunner `
-              --protocol tcp `
-              --priority 1000 `
-              --source-address-prefixes ${{ env.runner_ip }} `
-              --destination-port-ranges 27022 27018 `
-              --access Allow `
-              --direction Inbound  
+          # Add rule to each NSG
+          az network nsg rule create `
+            --resource-group "WindSoft" `
+            --nsg-name $nsgName `
+            --name AllowGitHubRunner `
+            --protocol tcp `
+            --priority 1000 `
+            --source-address-prefixes ${{ env.runner_ip }} `
+            --destination-port-ranges 27022 27018 `
+            --access Allow `
+            --direction Inbound  
         }
-
 
     - name: Install MongoDB Tools
       run: |
@@ -60,14 +59,15 @@ jobs:
       shell: pwsh
       run: |
         # Call script
-       .\mongo.ps1
-    - name: Remove GitHub Runner IP Both NSGs
+        .\mongo.ps1
+
+    - name: Remove GitHub Runner IP from Both NSGs
       run: |
         $nsgNames = @("SubnetMongoDbNSG", "NicMongoDbNSG")  # Array of NSG names to target
         foreach ($nsgName in $nsgNames) {
-            # Remove rule from each NSG
-            az network nsg rule delete `
-              --resource-group "WindSoft" `
-              --nsg-name $nsgName `
-              --name AllowGitHubRunner
+          # Remove rule from each NSG
+          az network nsg rule delete `
+            --resource-group "WindSoft" `
+            --nsg-name $nsgName `
+            --name AllowGitHubRunner
         }
