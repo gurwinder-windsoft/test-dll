@@ -22,7 +22,6 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }} 
-        subscription-id: "b120f947-2f70-40e2-9da1-63ab45e71a9a"  
 
     - name: Get GitHub Runner's IP
       id: runner_ip
