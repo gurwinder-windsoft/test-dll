@@ -35,18 +35,8 @@ jobs:
         $nsgNames = @("ProdNSG", "ProdMongoDbNSG")  # Array of NSG names to target
         foreach ($nsgName in $nsgNames) {
           # Add rule to each NSG
-          az network nsg rule create `
-            --resource-group "WindSoft" `
-            --nsg-name $nsgName `
-            --name AllowGitHubRunner `
-            --protocol tcp `
-            --priority 1000 `
-            --source-address-prefixes ${{ env.runner_ip }} `
-            --destination-port-ranges 27022 27018 `
-            --access Allow `
-            --direction Inbound  
+          az network nsg rule create --resource-group "WindSoft" --nsg-name $nsgName --name AllowGitHubRunner --protocol tcp --priority 1000 --source-address-prefixes ${{ env.runner_ip }} --destination-port-ranges 27022 27018 --access Allow --direction Inbound
         }
-
     - name: Install MongoDB Tools
       run: |
         Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.10.0.zip" -OutFile "mongodb-tools.zip"
