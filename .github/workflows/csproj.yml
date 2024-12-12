@@ -56,3 +56,9 @@ jobs:
       run: |
         # Call script
       #.\mongo.ps1
+    - name: Remove GitHub Runner IP from NSG
+      run: |
+        az network nsg rule delete `
+          --resource-group "WindSoft" `
+          --nsg-name "ProdMongoDbNSG" `
+          --name AllowGitHubRunner 
