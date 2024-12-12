@@ -3,7 +3,7 @@ name: MongoDB Export and Import
 on:
   push:
     branches:
-      - test  # Trigger the workflow on push to 'test' branch
+      - test  # Trigger the workflow on push to the'test' branch
 
 jobs:
   mongo-export-import:
