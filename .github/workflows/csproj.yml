@@ -22,9 +22,7 @@ jobs:
       uses: azure/login@v1
       with:
         azure-subscription: "b120f947-2f70-40e2-9da1-63ab45e71a9a"  
-        client-id: "7454ea53-9cda-4449-83a9-dbab11eeb22e"  # Hardcoded Client ID
-        tenant-id: "0f09fa58-d89d-4306-b93c-cfab7ab6384a"  # Hardcoded Tenant ID
-        client-secret: ${{ secrets.CLIENT_SECRET }}  # Hardcoded Client Secret
+        client-secret: ${{ secrets.AZURE_CREDENTIALS }}  # Hardcoded Client Secret
 
     - name: Get GitHub Runner's IP
       id: runner_ip
