@@ -32,15 +32,15 @@ jobs:
 
     - name: Add GitHub Runner IP to NSG
       run: |
-        az network nsg rule create \
-          --resource-group "WindSoft" \
-          --nsg-name "ProdMongoDbNSG" \
-          --name AllowGitHubRunner \
-          --protocol tcp \
-          --priority 1000 \
-          --source-address-prefixes ${{env.runner_ip}} \
-          --destination-port-ranges 27017 27018 \
-          --access Allow \
+        az network nsg rule create `
+          --resource-group "WindSoft" `
+          --nsg-name "ProdMongoDbNSG" `
+          --name AllowGitHubRunner `
+          --protocol tcp `
+          --priority 1000 `
+          --source-address-prefixes ${{ env.runner_ip }} `
+          --destination-port-ranges 27017 27018 `
+          --access Allow `
           --direction Inbound  
 
     - name: Install MongoDB Tools
