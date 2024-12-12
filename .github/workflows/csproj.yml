@@ -9,10 +9,10 @@ jobs:
   mongo-export-import:
     runs-on: windows-latest
     env:
-      DB_USERNAME: ${{secrets.DB_USERNAME}}
-      PREPROD_PASSWORD: ${{secrets.PREPROD_PASSWORD}}
-      PROD_PASSWORD: ${{secrets.PROD_PASSWORD}}
-      AZURE_VM_PUBLIC_IP: ${{secrets.AZURE_VM_PUBLIC_IP}}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      PREPROD_PASSWORD: ${{ secrets.PREPROD_PASSWORD }}
+      PROD_PASSWORD: ${{ secrets.PROD_PASSWORD }}
+      AZURE_VM_PUBLIC_IP: ${{ secrets.AZURE_VM_PUBLIC_IP }}
 
     steps:
     - name: Checkout Repository
@@ -21,14 +21,18 @@ jobs:
     - name: Set up Azure CLI
       uses: azure/login@v1
       with:
-        azure-subscription: "b120f947-2f70-40e2-9da1-63ab71a9a"  
-      
+        azure-subscription: "b120f947-2f70-40e2-9da1-63ab45e71a9a"  
+        client-id: "7454ea53-9cda-4449-83a9-dbab11eeb22e"  # Hardcoded Client ID
+        tenant-id: "0f09fa58-d89d-4306-b93c-cfab7ab6384a"  # Hardcoded Tenant ID
+        client-secret: ${{ secrets.CLIENT_SECRET }}  # Hardcoded Client Secret
+
     - name: Get GitHub Runner's IP
       id: runner_ip
       run: | 
         $runner_ip = Invoke-RestMethod -Uri "http://ifconfig.me"
         Write-Host "Runner IP: $runner_ip"
         echo "runner_ip=$runner_ip" >> $env:GITHUB_ENV 
+
     - name: Add GitHub Runner IP to NSG
       run: |
         az network nsg rule create \
@@ -41,22 +45,15 @@ jobs:
           --destination-port-ranges 27017 27018 \
           --access Allow \
           --direction Inbound  
- 
-    # Step 2: Download and install MongoDB Tools
+
     - name: Install MongoDB Tools
       run: |
-        # Download MongoDB tools and unzip them
         Invoke-WebRequest -Uri "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-windows-x86_64-100.10.0.zip" -OutFile "mongodb-tools.zip"
         Expand-Archive -Path "mongodb-tools.zip" -DestinationPath "C:\mongodb-tools"
-
-        # Debugging step to list contents of the extracted folder
         Write-Host "Listing files in the extracted MongoDB tools folder:"
         Get-ChildItem -Path "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin" -Recurse
-
-        # Add MongoDB tools to PATH and persist across steps
         echo "C:\mongodb-tools\mongodb-database-tools-windows-x86_64-100.10.0\bin" >> $GITHUB_ENV  
 
-    # Step 3: Run PowerShell 
     - name: Run PowerShell Script
       shell: pwsh
       run: |
